@@ -7,6 +7,16 @@ import dotenv from "dotenv";
 
 dotenv.config(); // Carrega as variáveis de ambiente
 
+// Função auxiliar para gerar um número de conta, replicada do UsuarioContaService
+// para manter o seed script independente.
+const gerarNumeroConta = (): string => {
+    const numero = Math.floor(1000000 + Math.random() * 9000000).toString();
+    // Simples dígito verificador (soma dos dígitos módulo 10)
+    const digito = numero.split('').reduce((acc, digit) => acc + parseInt(digit), 0) % 10;
+    return `${numero.substring(0, 7)}-${digito}`;
+};
+
+
 const createAdmin = async () => {
     try {
         console.log("Inicializando conexão com o banco de dados para o seed...");
@@ -36,6 +46,8 @@ const createAdmin = async () => {
         const admin = usuarioContaRepository.create({
             nomeCompleto: "Administrador do Sistema",
             cpf: adminCpf,
+            agencia: "0001", // Agência padrão para o admin
+            numeroConta: gerarNumeroConta(), // CORRIGIDO: Gera um número de conta para o admin
             senha: senhaHash,
             role: UserRole.ADMIN, // Define o papel como ADMIN
             limiteCredito: 999999, // Limite alto para o admin

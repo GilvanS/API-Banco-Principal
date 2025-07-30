@@ -1,72 +1,63 @@
-// src/controllers/CartaoController.ts
+// src/controllers/UsuarioContaController.ts
 import { NextFunction, Response } from "express";
-import { AuthRequest } from "../middleware/authMiddleware";
-import { CartaoService, ICartaoData } from "../services/CartaoService";
 import { UsuarioContaService } from "../services/UsuarioContaService";
+import { AuthRequest } from "../middleware/authMiddleware";
 import { NotFoundError } from "../services/errors/NotFoundError";
-import { TipoCartao } from "../entities/Cartao";
 
-export class CartaoController {
-    private cartaoService = new CartaoService();
-    private usuarioContaService = new UsuarioContaService();
+const usuarioContaService = new UsuarioContaService();
 
-    /**
-     * Cria um novo cartão de CRÉDITO para um usuário.
-     * O tipo do cartão é fixo como 'credito'.
-     */
-    async criarCredito(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+export class UsuarioContaController {
+    async criar(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const { cpf, titularidade, bandeira, limite } = req.body;
-            const conta = await this.usuarioContaService.buscarPorCpf(cpf);
-
-            if (!conta) {
-                throw new NotFoundError("Conta de usuário com o CPF informado não foi encontrada.");
-            }
-
-            // Monta o DTO com os dados validados e o tipo fixo
-            const dadosCartao: ICartaoData = {
-                tipo: TipoCartao.CREDITO,
-                titularidade,
-                bandeira,
-                limite,
-            };
-
-            const cartao = await this.cartaoService.criarCartao(conta, dadosCartao);
-            return res.status(201).json(cartao);
+            const novoUsuario = await usuarioContaService.criar(req.body);
+            return res.status(201).json(novoUsuario);
         } catch (error) {
             return next(error);
         }
     }
 
-    /**
-     * Atualiza o limite ou o status de um cartão existente.
-     */
-    async atualizar(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+    async login(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const { id } = req.params;
-            const cartaoAtualizado = await this.cartaoService.atualizarCartao(id, req.body);
-
-            if (!cartaoAtualizado) {
-                throw new NotFoundError("Cartão não encontrado.");
-            }
-            return res.status(200).json(cartaoAtualizado);
+            const token = await usuarioContaService.login(req.body);
+            return res.status(200).json({ token });
         } catch (error) {
             return next(error);
         }
     }
 
-    /**
-     * Exclui permanentemente um cartão.
-     */
-    async excluir(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+    async buscarTodos(_req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const resumoContas = await usuarioContaService.buscarTodosResumo();
+            return res.status(200).json(resumoContas);
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    async atualizarConta(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const { id } = req.params;
-            const excluido = await this.cartaoService.excluirCartao(id);
+            const contaAtualizada = await usuarioContaService.atualizarConta(id, req.body);
 
-            if (!excluido) {
-                throw new NotFoundError("Cartão não encontrado ou já foi excluído.");
+            if (!contaAtualizada) {
+                throw new NotFoundError("Conta não encontrada.");
             }
-            // 204 No Content é a resposta padrão para uma exclusão bem-sucedida
+
+            return res.status(200).json(contaAtualizada);
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    async desativarConta(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+        try {
+            const { id } = req.params;
+            const contaDesativada = await usuarioContaService.desativarConta(id);
+
+            if (!contaDesativada) {
+                throw new NotFoundError("Conta não encontrada.");
+            }
+
             return res.status(204).send();
         } catch (error) {
             return next(error);

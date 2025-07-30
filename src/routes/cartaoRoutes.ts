@@ -4,24 +4,24 @@ import { body, param } from "express-validator";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { validateRequest } from "../middleware/validateRequest";
 import { CartaoController } from "../controllers/CartaoController";
-import { BandeiraCartao, StatusCartao, TitularidadeCartao } from "../entities/Cartao";
+import { BandeiraCartao, StatusCartao } from "../entities/Cartao";
 
 const router = Router();
 const cartaoController = new CartaoController();
 
-// Rota para criar um novo cartão de CRÉDITO
+// Rota para solicitar um novo cartão de CRÉDITO
 router.post(
-    "/credito", // Rota mais específica para a criação de cartões de crédito
+    "/credito",
     authMiddleware,
     [
         body("cpf").notEmpty().withMessage("O CPF do titular da conta é obrigatório."),
-        body("titularidade").isIn(Object.values(TitularidadeCartao)).withMessage("A titularidade é inválida (titular ou adicional)."),
         body("bandeira").isIn(Object.values(BandeiraCartao)).withMessage("A bandeira do cartão é inválida."),
-        // O limite agora é obrigatório para esta rota
         body("limite").isFloat({ gt: 0 }).withMessage("O limite para cartão de crédito é obrigatório e deve ser maior que zero."),
+        // NOVO: Validação para o campo opcional de geração de cartão adicional
+        body("gerarAdicional").optional().isBoolean().withMessage("O campo 'gerarAdicional' deve ser um booleano (true/false)."),
         validateRequest
     ],
-    cartaoController.criarCredito // Chama o novo método do controller
+    cartaoController.solicitarCredito // Chama o novo método do controller
 );
 
 // Rota para atualizar um cartão (limite, status)

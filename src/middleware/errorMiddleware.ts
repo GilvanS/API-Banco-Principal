@@ -2,6 +2,7 @@
 import { NextFunction, Request, Response } from "express";
 import { DuplicateCpfError } from "../services/errors/DuplicateCpfError";
 import { AuthenticationError } from "../services/errors/AuthenticationError";
+import { DuplicateCardError } from "../services/errors/DuplicateCardError";
 import { NotFoundError } from "../services/errors/NotFoundError";
 
 interface IApiError {
@@ -24,6 +25,14 @@ export const errorMiddleware = (err: Error, req: Request, res: Response, _next: 
             status: 400,
             type: "/errors/dados-duplicados",
             title: "Dados já cadastrados",
+            detail: err.message,
+            instance: req.path,
+        };
+    } else if (err instanceof DuplicateCardError) {
+        apiError = {
+            status: 409, // Conflict: A requisição não pôde ser processada por um conflito no estado do recurso.
+            type: "/errors/recurso-duplicado",
+            title: "Recurso Duplicado",
             detail: err.message,
             instance: req.path,
         };

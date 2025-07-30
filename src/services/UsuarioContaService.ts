@@ -11,11 +11,22 @@ import { AuthenticationError } from "./errors/AuthenticationError";
 
 const usuarioContaRepository = AppDataSource.getRepository(UsuarioConta);
 
+// NOVO: Função auxiliar para gerar um número de conta único
+const gerarNumeroConta = (): string => {
+    const numero = Math.floor(1000000 + Math.random() * 9000000).toString();
+    // Simples dígito verificador (soma dos dígitos módulo 10)
+    const digito = numero.split('').reduce((acc, digit) => acc + parseInt(digit), 0) % 10;
+    return `${numero.substring(0, 7)}-${digito}`;
+};
+
+
 // DTO para a resposta da consulta de contas
 export interface IContaResumo {
     id: string;
     nomeCompleto: string;
     cpf: string;
+    agencia: string; // Adicionado
+    numeroConta: string; // Adicionado
     limiteCredito: number;
     contaAtiva: boolean;
     cartoesAtivos: number;
@@ -47,6 +58,7 @@ interface IManutencaoContaData {
 const JWT_SECRET = process.env.JWT_SECRET || "desenvolvimento_chave_secreta_padrao";
 
 export class UsuarioContaService {
+    // ALTERADO: Instanciamos o CartaoService aqui para ser usado
     private cartaoService = new CartaoService();
 
     /**
@@ -65,33 +77,45 @@ export class UsuarioContaService {
         const novoUsuarioData: Partial<UsuarioConta> = {
             nomeCompleto,
             cpf,
+            agencia: "0001",
+            numeroConta: gerarNumeroConta(),
             senha: senhaHash,
-            role: UserRole.ADMIN, // Papel é sempre ADMIN
-            limiteCredito: data.limiteCredito || 1000.00,
-            contaBloqueada: data.contaBloqueada === undefined ? false : data.contaBloqueada,
-            limiteDebitoDiario: data.limiteDebitoDiario || 5000.00,
+            role: UserRole.ADMIN,
+            limiteCredito: data.limiteCredito ?? 1000.00,
+            contaBloqueada: data.contaBloqueada ?? false,
+            limiteDebitoDiario: data.limiteDebitoDiario ?? 5000.00,
         };
 
         const usuarioConta = usuarioContaRepository.create(novoUsuarioData as UsuarioConta);
         await usuarioContaRepository.save(usuarioConta);
 
-        // Inicializa a propriedade 'cartoes' para evitar erros
         usuarioConta.cartoes = [];
 
-        // Gera o cartão de débito padrão automaticamente
         await this.cartaoService.criarCartao(usuarioConta, {
             tipo: TipoCartao.DEBITO,
             titularidade: TitularidadeCartao.TITULAR,
-            bandeira: BandeiraCartao.MASTERCARD, // Bandeira padrão para o débito
+            bandeira: BandeiraCartao.MASTERCARD,
         });
 
-        const { senha: _, ...usuarioSemSenha } = usuarioConta;
+        // Recarrega a entidade para garantir que o cartão de débito esteja nela
+        const usuarioComCartao = await this.buscarPorId(usuarioConta.id);
+
+        // --- SUGESTÃO DE MELHORIA ---
+        // Adiciona uma verificação para o caso (improvável) de o usuário não ser encontrado.
+        // Isso torna o código mais robusto e elimina a necessidade do operador `!`.
+        if (!usuarioComCartao) {
+            // Lançar um erro aqui é apropriado, pois isso indicaria um estado inconsistente grave no sistema.
+            throw new Error("Falha crítica: usuário recém-criado não foi encontrado no banco de dados.");
+        }
+
+        // Agora que a verificação foi feita, podemos remover o '!' com segurança.
+        // @ts-ignore
+        const { senha: _, ...usuarioSemSenha } = usuarioComCartao;
         return usuarioSemSenha;
     }
 
-    /**
-     * Realiza o login e retorna um token JWT.
-     */
+
+    // ... (método login permanece o mesmo)
     async login(data: ILoginData): Promise<string> {
         const { cpf, senha } = data;
 
@@ -117,9 +141,7 @@ export class UsuarioContaService {
         return token;
     }
 
-    /**
-     * Atualiza dados de uma conta.
-     */
+    // ... (método atualizarConta permanece o mesmo)
     async atualizarConta(id: string, data: IManutencaoContaData): Promise<Omit<UsuarioConta, "senha"> | null> {
         const conta = await this.buscarPorId(id);
         if (!conta) {
@@ -140,9 +162,7 @@ export class UsuarioContaService {
         return conta;
     }
 
-    /**
-     * Desativa uma conta de usuário (soft delete).
-     */
+    // ... (método desativarConta permanece o mesmo)
     async desativarConta(id: string): Promise<Omit<UsuarioConta, "senha"> | null> {
         const conta = await this.buscarPorId(id);
         if (!conta) {
@@ -165,10 +185,13 @@ export class UsuarioContaService {
             relations: ["cartoes"],
         });
 
+        // ALTERADO: Adiciona agencia e numeroConta ao resumo
         return contas.map(conta => ({
             id: conta.id,
             nomeCompleto: conta.nomeCompleto,
             cpf: conta.cpf,
+            agencia: conta.agencia,
+            numeroConta: conta.numeroConta,
             limiteCredito: conta.limiteCredito,
             contaAtiva: !conta.contaBloqueada,
             cartoesAtivos: conta.cartoes.filter(c => c.status === StatusCartao.ATIVO).length,

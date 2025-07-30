@@ -9,26 +9,29 @@ export class CartaoController {
     private cartaoService = new CartaoService();
     private usuarioContaService = new UsuarioContaService();
 
-    // Novo método para criar qualquer tipo de cartão
-    criarCredito: unknown;
-    async criar(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+    /**
+     * Solicita um novo cartão de CRÉDITO para um usuário, com opção de gerar um adicional.
+     */
+    async solicitarCredito(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            // Separa o CPF do resto dos dados do cartão
-            const { cpf, ...dadosCartao } = req.body;
+            const { cpf, ...dadosSolicitacao } = req.body;
             const conta = await this.usuarioContaService.buscarPorCpf(cpf);
 
             if (!conta) {
                 throw new NotFoundError("Conta de usuário com o CPF informado não foi encontrada.");
             }
 
-            const cartao = await this.cartaoService.criarCartao(conta, dadosCartao);
-            return res.status(201).json(cartao);
+            const cartoesGerados = await this.cartaoService.solicitarCartaoDeCredito(conta, dadosSolicitacao);
+            return res.status(201).json(cartoesGerados);
+
         } catch (error) {
             return next(error);
         }
     }
 
-    // Novo método para atualizar um cartão (limite, status)
+    /**
+     * Atualiza o limite ou o status de um cartão existente.
+     */
     async atualizar(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const { id } = req.params;
@@ -43,7 +46,9 @@ export class CartaoController {
         }
     }
 
-    // Novo método para excluir um cartão
+    /**
+     * Exclui permanentemente um cartão.
+     */
     async excluir(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const { id } = req.params;
@@ -52,7 +57,6 @@ export class CartaoController {
             if (!excluido) {
                 throw new NotFoundError("Cartão não encontrado ou já foi excluído.");
             }
-            // 204 No Content é a resposta padrão para uma exclusão bem-sucedida
             return res.status(204).send();
         } catch (error) {
             return next(error);

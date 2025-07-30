@@ -18,6 +18,13 @@ export class UsuarioConta {
     @Index({ unique: true })
     cpf: string;
 
+    // NOVO: Adicionamos os campos de agência e número da conta.
+    @Column("varchar", { length: 4, default: "0001" })
+    agencia: string;
+
+    @Column("varchar", { length: 8, unique: true })
+    numeroConta: string;
+
     @Column("varchar", { select: false })
     senha: string;
 
@@ -40,7 +47,7 @@ export class UsuarioConta {
     @Column("float", { default: 5000.00 })
     limiteDebitoDiario: number;
 
-    @OneToMany(() => Cartao, (cartao) => cartao.usuarioConta)
+    @OneToMany(() => Cartao, (cartao) => cartao.usuarioConta, { cascade: true }) // Adicionado cascade para facilitar
     cartoes: Cartao[];
 
     @CreateDateColumn()
