@@ -1,10 +1,9 @@
 // src/entities/UsuarioConta.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, OneToMany } from "typeorm";
+import { Cartao } from "./Cartao";
 
-// NOVO: Enum para os papéis (roles) de usuário
 export enum UserRole {
     ADMIN = "admin",
-    OPERADOR = "operador",
 }
 
 @Entity("usuarios_contas")
@@ -22,19 +21,27 @@ export class UsuarioConta {
     @Column("varchar", { select: false })
     senha: string;
 
-    // NOVO: Coluna para armazenar o papel do usuário
     @Column({
         type: "simple-enum",
         enum: UserRole,
-        default: UserRole.OPERADOR
+        default: UserRole.ADMIN
     })
     role: UserRole;
 
     @Column("float", { default: 1000.00 })
     limiteCredito: number;
 
+    @Column("boolean", { default: true })
+    ativo: boolean;
+
     @Column("boolean", { default: false })
     contaBloqueada: boolean;
+
+    @Column("float", { default: 5000.00 })
+    limiteDebitoDiario: number;
+
+    @OneToMany(() => Cartao, (cartao) => cartao.usuarioConta)
+    cartoes: Cartao[];
 
     @CreateDateColumn()
     dataCriacao: Date;

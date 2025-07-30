@@ -14,9 +14,9 @@ const usuarioContaController = new UsuarioContaController();
 router.post(
     "/login",
     [
-        body("cpf").notEmpty().withMessage("O CPF é obrigatório."),
-        body("senha").notEmpty().withMessage("A senha é obrigatória."),
-        validateRequest,
+            body("cpf").notEmpty().withMessage("O CPF é obrigatório."),
+            body("senha").notEmpty().withMessage("A senha é obrigatória."),
+            validateRequest,
     ],
     usuarioContaController.login
 );
@@ -26,19 +26,19 @@ router.post(
     "/",
     authMiddleware, // Requer autenticação
     [
-        body("nomeCompleto").notEmpty().withMessage("O nome completo é obrigatório."),
-        body("cpf")
-            .notEmpty().withMessage("O CPF é obrigatório.")
-            .customSanitizer((value: string) => value.replace(/\D/g, '')),
-        body("senha")
-            .isLength({ min: 8 }).withMessage("A senha deve ter no mínimo 8 caracteres.")
-            .matches(/\d/).withMessage("A senha deve conter pelo menos um número.")
-            .matches(/[A-Z]/).withMessage("A senha deve conter pelo menos uma letra maiúscula."),
-        // Validações opcionais para ADMIN
-        body("role").optional().isIn(Object.values(UserRole)).withMessage("Papel (role) inválido."),
-        body("limiteCredito").optional().isFloat({ gt: 0 }).withMessage("O limite de crédito deve ser um número positivo."),
-        body("contaBloqueada").optional().isBoolean().withMessage("O campo contaBloqueada deve ser um booleano."),
-        validateRequest,
+            body("nomeCompleto").notEmpty().withMessage("O nome completo é obrigatório."),
+            body("cpf")
+                .notEmpty().withMessage("O CPF é obrigatório.")
+                .customSanitizer((value: string) => value.replace(/\D/g, '')),
+            body("senha")
+                .isLength({ min: 8 }).withMessage("A senha deve ter no mínimo 8 caracteres.")
+                .matches(/\d/).withMessage("A senha deve conter pelo menos um número.")
+                .matches(/[A-Z]/).withMessage("A senha deve conter pelo menos uma letra maiúscula."),
+            // Validações opcionais para ADMIN
+            body("role").optional().isIn(Object.values(UserRole)).withMessage("Papel (role) inválido."),
+            body("limiteCredito").optional().isFloat({ gt: 0 }).withMessage("O limite de crédito deve ser um número positivo."),
+            body("contaBloqueada").optional().isBoolean().withMessage("O campo contaBloqueada deve ser um booleano."),
+            validateRequest,
     ],
     usuarioContaController.criar
 );
@@ -57,11 +57,19 @@ router.patch(
     authMiddleware,
     adminOnly, // Apenas ADMIN pode acessar
     [
-        body("limiteCredito").optional().isFloat({ min: 0 }).withMessage("O limite de crédito deve ser um número não negativo."),
-        body("contaBloqueada").optional().isBoolean().withMessage("O campo contaBloqueada deve ser um booleano."),
-        validateRequest,
+            body("limiteCredito").optional().isFloat({ min: 0 }).withMessage("O limite de crédito deve ser um número não negativo."),
+            body("contaBloqueada").optional().isBoolean().withMessage("O campo contaBloqueada deve ser um booleano."),
+            validateRequest,
     ],
     usuarioContaController.atualizarConta
+);
+
+// Rota para desativar uma conta (soft delete, apenas ADMIN)
+router.delete(
+    "/:id",
+    authMiddleware,
+    adminOnly,
+    usuarioContaController.desativarConta
 );
 
 export default router;

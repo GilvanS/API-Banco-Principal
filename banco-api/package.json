@@ -1,0 +1,38 @@
+{
+  "name": "banco-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "rest-api": "node rest/app.js",
+    "graphql-api": "node graphql/app.js",
+    "seed": "node scripts/seed.js",
+    "consultar": "node scripts/consultar-dados.js",
+    "create-env": "node scripts/create-env.js",
+    "config": "node scripts/config-manager.js",
+    "config:show": "node scripts/config-manager.js show",
+    "config:list-ports": "node scripts/config-manager.js list-ports",
+    "config:rest-port": "node scripts/config-manager.js rest-port",
+    "config:graphql-port": "node scripts/config-manager.js graphql-port",
+    "config:update-ports": "node scripts/config-manager.js update-ports",
+    "config:sync-workflow": "node scripts/config-manager.js sync-workflow",
+    "workflow:sync": "node scripts/sync-workflow-port.js sync",
+    "workflow:info": "node scripts/sync-workflow-port.js info"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "apollo-server": "^3.13.0",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "graphql": "^16.10.0",
+    "http-errors": "^2.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.0",
+    "open-api-test-automation-coverage": "^1.0.0",
+    "swagger-ui-express": "^5.0.1"
+  }
+}

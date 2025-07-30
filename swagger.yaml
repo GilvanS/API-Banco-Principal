@@ -2,12 +2,11 @@ openapi: 3.0.0
 info:
   title: API Banco Principal
   description: API para gerenciamento de contas e operações bancárias com papéis de usuário.
-  version: 2.0.0
+  version: 3.2.0
 servers:
   - url: http://localhost:3000
     description: Servidor de Desenvolvimento
 
-# Seção de segurança para autenticação JWT
 components:
   securitySchemes:
     bearerAuth:
@@ -15,6 +14,34 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    Cartao:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tipo:
+          type: string
+          enum: [debito, credito]
+        titularidade:
+          type: string
+          enum: [titular, adicional]
+        numero:
+          type: string
+          example: "5123 4567 8901 2345"
+        dataValidade:
+          type: string
+          example: "12/28"
+        status:
+          type: string
+          enum: [ativo, bloqueado]
+        limite:
+          type: number
+          format: float
+          nullable: true
+        dataCriacao:
+          type: string
+          format: date-time
     UsuarioConta:
       type: object
       properties:
@@ -31,6 +58,14 @@ components:
         limiteCredito:
           type: number
           format: float
+          description: "Limite de crédito total da conta."
+        limiteDebitoDiario:
+          type: number
+          format: float
+          description: "Limite de débito diário da conta."
+        ativo:
+          type: boolean
+          description: "Indica se a conta está ativa ou desativada (soft delete)."
         contaBloqueada:
           type: boolean
         dataCriacao:
@@ -39,25 +74,48 @@ components:
         dataAtualizacao:
           type: string
           format: date-time
-    Error:
+        cartoes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cartao'
+    ApiError:
       type: object
       properties:
-        erro:
+        type:
           type: string
+          description: "Uma referência URI que identifica o tipo do problema."
+          example: "/errors/dados-duplicados"
+        title:
+          type: string
+          description: "Um resumo curto e legível do problema."
+          example: "Dados já cadastrados"
+        status:
+          type: integer
+          description: "O código de status HTTP gerado pelo servidor."
+          example: 400
+        detail:
+          type: string
+          description: "Uma explicação legível e específica da ocorrência do problema."
+          example: "O CPF informado já está em uso."
+        instance:
+          type: string
+          description: "O caminho do endpoint onde o erro ocorreu."
+          example: "/usuarios-contas"
 
 tags:
   - name: "Autenticação"
     description: "Operações de login."
-  - name: "Contas (Operador)"
-    description: "Operações que um OPERADOR pode realizar."
+  - name: "Contas (Operador & Admin)"
+    description: "Operações de criação de contas."
   - name: "Contas (Admin)"
-    description: "Operações exclusivas para um ADMIN."
+    description: "Operações de consulta, manutenção e desativação de contas, exclusivas para Admins."
+  - name: "Cartões (Admin)"
+    description: "Operações de gerenciamento de cartões, exclusivas para Admins."
 
 paths:
   /usuarios-contas/login:
     post:
-      tags:
-        - "Autenticação"
+      tags: ["Autenticação"]
       summary: "Autentica um usuário e retorna um token JWT."
       requestBody:
         required: true
@@ -67,38 +125,30 @@ paths:
               type: object
               required: [cpf, senha]
               properties:
-                cpf:
-                  type: string
-                  example: "111.222.333-44"
-                senha:
-                  type: string
-                  format: password
-                  example: "SenhaValida123"
+                cpf: { type: string, example: "111.222.333-44" }
+                senha: { type: string, format: password, example: "SenhaValida123" }
       responses:
         '200':
           description: "Login bem-sucedido."
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
+              schema: { type: object, properties: { token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." } } }
         '401':
           description: "CPF ou senha inválidos."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
 
   /usuarios-contas:
     post:
-      tags:
-        - "Contas (Operador)"
-        - "Contas (Admin)"
+      tags: ["Contas (Operador & Admin)"]
       summary: "Cria um novo usuário (Operador ou Admin)."
       description: |
-        Cria uma nova conta.
-        - **Operadores** podem criar apenas outros operadores com limite fixo de 500.
-        - **Admins** podem criar operadores ou outros admins, definindo limite, status de bloqueio e papel.
-      security:
-        - bearerAuth: []
+        Cria uma nova conta e gera um cartão de débito automaticamente.
+        - **Operadores** podem criar apenas outros operadores com limite de crédito fixo de 500.
+        - **Admins** podem criar operadores ou outros admins, definindo todos os limites, status e papel.
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -107,46 +157,29 @@ paths:
               type: object
               required: [nomeCompleto, cpf, senha]
               properties:
-                nomeCompleto:
-                  type: string
-                  example: "Novo Operador"
-                cpf:
-                  type: string
-                  example: "123.456.789-11"
-                senha:
-                  type: string
-                  format: password
-                  example: "SenhaForte123"
-                role:
-                  type: string
-                  enum: [admin, operador]
-                  description: "(Admin only) Define o papel do novo usuário."
-                  example: "operador"
-                limiteCredito:
-                  type: number
-                  description: "(Admin only) Define o limite de crédito inicial."
-                  example: 2000.00
-                contaBloqueada:
-                  type: boolean
-                  description: "(Admin only) Define se a conta já começa bloqueada."
-                  example: false
+                nomeCompleto: { type: string, example: "Novo Operador" }
+                cpf: { type: string, example: "123.456.789-11" }
+                senha: { type: string, format: password, example: "SenhaForte123" }
+                role: { type: string, enum: [admin, operador], description: "(Admin only) Define o papel do novo usuário.", example: "operador" }
+                limiteCredito: { type: number, description: "(Admin only) Define o limite de crédito da conta.", example: 2000.00 }
+                limiteDebitoDiario: { type: number, description: "(Admin only) Define o limite de débito diário da conta.", example: 5000.00 }
+                contaBloqueada: { type: boolean, description: "(Admin only) Define se a conta já começa bloqueada.", example: false }
       responses:
-        '201':
-          description: "Usuário criado com sucesso."
+        '201': { description: "Usuário criado com sucesso." }
         '400':
-          description: "Erro de validação ou CPF já cadastrado."
-        '401':
-          description: "Não autorizado."
-        '403':
-          description: "Acesso negado."
+          description: "Erro de validação, dados inválidos ou CPF já cadastrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401': { description: "Não autorizado." }
+        '403': { description: "Acesso negado." }
 
     get:
-      tags:
-        - "Contas (Admin)"
-      summary: "Lista todas as contas (Admin only)."
-      description: "Retorna uma lista de todas as contas de usuário no sistema. Requer permissão de Administrador."
-      security:
-        - bearerAuth: []
+      tags: ["Contas (Admin)"]
+      summary: "Lista todas as contas ativas (Admin only)."
+      description: "Retorna uma lista de todas as contas ativas e seus cartões. Requer permissão de Administrador."
+      security: [{ bearerAuth: [] }]
       responses:
         '200':
           description: "Lista de contas retornada com sucesso."
@@ -156,44 +189,108 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/UsuarioConta'
-        '401':
-          description: "Não autorizado."
-        '403':
-          description: "Acesso negado."
+        '401': { description: "Não autorizado." }
+        '403': { description: "Acesso negado." }
 
   /usuarios-contas/{id}:
     patch:
-      tags:
-        - "Contas (Admin)"
+      tags: ["Contas (Admin)"]
       summary: "Realiza manutenção em uma conta (Admin only)."
-      description: "Atualiza o limite de crédito ou o status de bloqueio de uma conta específica. Requer permissão de Administrador."
-      security:
-        - bearerAuth: []
+      description: "Atualiza os limites ou o status de bloqueio de uma conta. Requer permissão de Administrador."
+      security: [{ bearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                limiteCredito:
-                  type: number
-                  example: 5000.00
-                contaBloqueada:
-                  type: boolean
-                  example: true
+                limiteCredito: { type: number, example: 5000.00 }
+                limiteDebitoDiario: { type: number, example: 10000.00 }
+                contaBloqueada: { type: boolean, example: true }
       responses:
-        '200':
-          description: "Conta atualizada com sucesso."
-        '401':
-          description: "Não autorizado."
-        '403':
-          description: "Acesso negado."
+        '200': { description: "Conta atualizada com sucesso." }
+        '401': { description: "Não autorizado." }
+        '403': { description: "Acesso negado." }
         '404':
           description: "Conta não encontrada."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    delete:
+      tags: ["Contas (Admin)"]
+      summary: "Desativa uma conta (Soft Delete, Admin only)."
+      description: "Marca uma conta como inativa e a bloqueia, em vez de excluí-la permanentemente. Requer permissão de Administrador."
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: "Conta desativada com sucesso." }
+        '401': { description: "Não autorizado." }
+        '403': { description: "Acesso negado." }
+        '404':
+          description: "Conta não encontrada."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /cartoes:
+    post:
+      tags: ["Cartões (Admin)"]
+      summary: "Cria um novo cartão de crédito para um usuário (Admin only)."
+      description: "Oferece um cartão de crédito (titular ou adicional) para uma conta existente."
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cpf, limite, titularidade]
+              properties:
+                cpf: { type: string, description: "CPF do titular da conta que receberá o cartão.", example: "12345678900" }
+                limite: { type: number, description: "Limite de crédito do cartão." }
+                titularidade: { type: string, enum: [titular, adicional], description: "Se o cartão é para o titular ou um adicional." }
+      responses:
+        '201': { description: "Cartão de crédito criado com sucesso." }
+        '404':
+          description: "Conta de usuário não encontrada."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /cartoes/{id}/bloquear:
+    patch:
+      tags: ["Cartões (Admin)"]
+      summary: "Bloqueia um cartão específico (Admin only)."
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: "Cartão bloqueado com sucesso.", content: { application/json: { schema: { $ref: '#/components/schemas/Cartao' } } } }
+        '404':
+          description: "Cartão não encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /cartoes/{id}/desbloquear:
+    patch:
+      tags: ["Cartões (Admin)"]
+      summary: "Desbloqueia um cartão específico (Admin only)."
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: "Cartão desbloqueado com sucesso.", content: { application/json: { schema: { $ref: '#/components/schemas/Cartao' } } } }
+        '404':
+          description: "Cartão não encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'

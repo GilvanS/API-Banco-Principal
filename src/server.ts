@@ -11,17 +11,22 @@ import YAML from "yamljs";
 import path from "path";
 import { AppDataSource } from "./database/data-source";
 import usuarioContaRoutes from "./routes/usuarioContaRoutes";
+import cartaoRoutes from "./routes/cartaoRoutes";
+import { errorMiddleware } from "./middleware/errorMiddleware"; // 1. Importar o middleware de erro
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// CORREÇÃO: O caminho para o swagger.yaml deve subir apenas um nível (../)
 const swaggerDocument = YAML.load(path.resolve(__dirname, "../swagger.yaml"));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use("/usuarios-contas", usuarioContaRoutes);
+app.use("/cartoes", cartaoRoutes);
+
+// 2. Adicionar o middleware de erro DEPOIS de todas as rotas
+app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 3000;
 

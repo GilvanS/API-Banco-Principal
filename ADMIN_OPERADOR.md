@@ -76,3 +76,10 @@ Após criar o admin, inicie o servidor de desenvolvimento:
 -   ❌ Não pode definir `role` ou `contaBloqueada` na criação.
 -   ❌ Não pode listar todas as contas.
 -   ❌ Não pode realizar manutenção nas contas.
+
+
+// src/database/seeds/create-admin.ts
+
+// Pega os dados do admin do .env ou usa valores padrão seguros
+const adminCpf = process.env.ADMIN_CPF || "00000000000";
+const adminPassword = process.env.ADMIN_PASSWORD || "AdminSenhaForte123"; // <-- A senha padrão continua aqui

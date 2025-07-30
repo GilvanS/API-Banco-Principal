@@ -1,35 +1,25 @@
 // src/controllers/CartaoController.ts
 import { NextFunction, Response } from "express";
 import { AuthRequest } from "../middleware/authMiddleware";
-import { CartaoService, ICartaoData } from "../services/CartaoService";
+import { CartaoService } from "../services/CartaoService";
 import { UsuarioContaService } from "../services/UsuarioContaService";
 import { NotFoundError } from "../services/errors/NotFoundError";
-import { TipoCartao } from "../entities/Cartao";
 
 export class CartaoController {
     private cartaoService = new CartaoService();
     private usuarioContaService = new UsuarioContaService();
 
-    /**
-     * Cria um novo cartão de CRÉDITO para um usuário.
-     * O tipo do cartão é fixo como 'credito'.
-     */
-    async criarCredito(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
+    // Novo método para criar qualquer tipo de cartão
+    criarCredito: unknown;
+    async criar(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
         try {
-            const { cpf, titularidade, bandeira, limite } = req.body;
+            // Separa o CPF do resto dos dados do cartão
+            const { cpf, ...dadosCartao } = req.body;
             const conta = await this.usuarioContaService.buscarPorCpf(cpf);
 
             if (!conta) {
                 throw new NotFoundError("Conta de usuário com o CPF informado não foi encontrada.");
             }
-
-            // Monta o DTO com os dados validados e o tipo fixo
-            const dadosCartao: ICartaoData = {
-                tipo: TipoCartao.CREDITO,
-                titularidade,
-                bandeira,
-                limite,
-            };
 
             const cartao = await this.cartaoService.criarCartao(conta, dadosCartao);
             return res.status(201).json(cartao);
@@ -38,9 +28,7 @@ export class CartaoController {
         }
     }
 
-    /**
-     * Atualiza o limite ou o status de um cartão existente.
-     */
+    // Novo método para atualizar um cartão (limite, status)
     async atualizar(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const { id } = req.params;
@@ -55,9 +43,7 @@ export class CartaoController {
         }
     }
 
-    /**
-     * Exclui permanentemente um cartão.
-     */
+    // Novo método para excluir um cartão
     async excluir(req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const { id } = req.params;
