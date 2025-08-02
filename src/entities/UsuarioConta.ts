@@ -1,58 +1,68 @@
 // src/entities/UsuarioConta.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, OneToMany } from "typeorm";
 import { Cartao } from "./Cartao";
+import { Movimentacao } from "./Movimentacao";
 
 export enum UserRole {
     ADMIN = "admin",
+    OPERADOR = "operador"
 }
 
 @Entity("usuarios_contas")
 export class UsuarioConta {
     @PrimaryGeneratedColumn("uuid")
-    id: string;
+    id!: string;
 
-    @Column("varchar", { length: 100 })
-    nomeCompleto: string;
+    @Column()
+    nomeCompleto!: string;
 
-    @Column("varchar", { unique: true })
-    @Index({ unique: true })
-    cpf: string;
+    @Column({ unique: true })
+    cpf!: string;
 
     // NOVO: Adicionamos os campos de agência e número da conta.
-    @Column("varchar", { length: 4, default: "0001" })
-    agencia: string;
+    @Column({ default: "0001" })
+    agencia!: string;
 
-    @Column("varchar", { length: 8, unique: true })
-    numeroConta: string;
+    @Column({ unique: true })
+    numeroConta!: string;
 
-    @Column("varchar", { select: false })
-    senha: string;
+    @Column({ select: false })
+    senha!: string;
 
     @Column({
-        type: "simple-enum",
-        enum: UserRole,
-        default: UserRole.ADMIN
+        type: "varchar",
+        length: 20,
+        default: UserRole.OPERADOR
     })
-    role: UserRole;
+    role!: UserRole;
 
-    @Column("float", { default: 1000.00 })
-    limiteCredito: number;
+    @Column("decimal", { precision: 10, scale: 2, default: 1000 })
+    limiteCredito!: number;
 
-    @Column("boolean", { default: true })
-    ativo: boolean;
+    @Column("decimal", { precision: 10, scale: 2, default: 0 })
+    creditoUtilizado!: number;
 
-    @Column("boolean", { default: false })
-    contaBloqueada: boolean;
+    @Column("decimal", { precision: 10, scale: 2, default: 200 })
+    saldo!: number;
 
-    @Column("float", { default: 5000.00 })
-    limiteDebitoDiario: number;
+    @Column({ default: true })
+    ativo!: boolean;
+
+    @Column({ default: false })
+    contaBloqueada!: boolean;
+
+    @Column("decimal", { precision: 10, scale: 2, default: 5000 })
+    limiteDebitoDiario!: number;
 
     @OneToMany(() => Cartao, (cartao) => cartao.usuarioConta, { cascade: true }) // Adicionado cascade para facilitar
-    cartoes: Cartao[];
+    cartoes!: Cartao[];
+
+    @OneToMany(() => Movimentacao, movimentacao => movimentacao.usuarioConta)
+    movimentacoes!: Movimentacao[];
 
     @CreateDateColumn()
-    dataCriacao: Date;
+    dataCriacao!: Date;
 
     @UpdateDateColumn()
-    dataAtualizacao: Date;
+    dataAtualizacao!: Date;
 }

@@ -1,137 +1,222 @@
 // src/services/CartaoService.ts
 import { AppDataSource } from "../database/data-source";
-import { Cartao, StatusCartao, TipoCartao, TitularidadeCartao, BandeiraCartao } from "../entities/Cartao";
+import { Cartao, TipoCartao, BandeiraCartao, StatusCartao, TitularidadeCartao } from "../entities/Cartao";
 import { UsuarioConta } from "../entities/UsuarioConta";
-import { DuplicateCardError } from "./errors/DuplicateCardError";
-
-// Funções auxiliares para gerar dados do cartão (simulação)
-const gerarNumeroCartao = () => '5' + Array.from({ length: 15 }, () => Math.floor(Math.random() * 10)).join('');
-const gerarCVV = () => Array.from({ length: 3 }, () => Math.floor(Math.random() * 10)).join('');
-const gerarDataValidade = () => {
-    const data = new Date();
-    const mes = String(data.getMonth() + 1).padStart(2, '0');
-    const ano = String(data.getFullYear() + 5).slice(-2);
-    return `${mes}/${ano}`;
-};
-
-// DTO para criação de cartão
-export interface ICartaoData {
-    tipo: TipoCartao;
-    titularidade: TitularidadeCartao;
-    bandeira: BandeiraCartao;
-    limite?: number;
-}
-
-// NOVO: DTO para a solicitação de cartão de crédito
-export interface ISolicitacaoCreditoData {
-    bandeira: BandeiraCartao;
-    limite: number;
-    gerarAdicional?: boolean;
-}
-
-// NOVO: DTO para a resposta da solicitação
-export interface ISolicitacaoCreditoResponse {
-    titular: Cartao;
-    adicional?: Cartao;
-}
-
-// DTO para atualização de cartão
-export interface IAtualizarCartaoData {
-    limite?: number;
-    status?: StatusCartao;
-}
+import { LoggerService } from "./LoggerService";
+import bcrypt from "bcrypt";
 
 export class CartaoService {
-    private cartaoRepository = AppDataSource.getRepository(Cartao);
+    private static repository = AppDataSource.getRepository(Cartao);
+    private static usuarioRepository = AppDataSource.getRepository(UsuarioConta);
 
-    // NOVO: Método orquestrador para a solicitação de crédito
-    async solicitarCartaoDeCredito(conta: UsuarioConta, dadosSolicitacao: ISolicitacaoCreditoData): Promise<ISolicitacaoCreditoResponse> {
-        // 1. Cria o cartão do titular
-        const cartaoTitular = await this.criarCartao(conta, {
-            tipo: TipoCartao.CREDITO,
-            titularidade: TitularidadeCartao.TITULAR,
-            bandeira: dadosSolicitacao.bandeira,
-            limite: dadosSolicitacao.limite,
-        });
-
-        const response: ISolicitacaoCreditoResponse = { titular: cartaoTitular };
-
-        // 2. Se solicitado, cria o cartão adicional
-        if (dadosSolicitacao.gerarAdicional) {
-            // Recarrega a conta para ter a lista de cartões atualizada
-            const contaAtualizada = await AppDataSource.getRepository(UsuarioConta).findOneOrFail({
-                where: { id: conta.id },
-                relations: ["cartoes"]
+    static async solicitarCartaoCredito(dados: {
+        usuarioId: string;
+        bandeira: BandeiraCartao;
+        titularidade: TitularidadeCartao;
+        limite?: number;
+    }) {
+        try {
+            const usuario = await this.usuarioRepository.findOne({
+                where: { id: dados.usuarioId }
             });
 
-            const cartaoAdicional = await this.criarCartao(contaAtualizada, {
+            if (!usuario) {
+                throw new Error("Usuário não encontrado");
+            }
+
+            const cartao = this.repository.create({
+                usuarioConta: usuario,
                 tipo: TipoCartao.CREDITO,
-                titularidade: TitularidadeCartao.ADICIONAL,
-                bandeira: dadosSolicitacao.bandeira,
-                limite: dadosSolicitacao.limite,
-            }, true); // Passa flag para gerar número especial
+                bandeira: dados.bandeira,
+                titularidade: dados.titularidade,
+                numero: this.gerarNumeroCartao(),
+                cvv: this.gerarCVV(),
+                dataValidade: this.gerarDataValidade(),
+                limite: dados.limite || 1000.00
+            });
 
-            response.adicional = cartaoAdicional;
+            await this.repository.save(cartao);
+
+            LoggerService.info("Cartão de crédito solicitado com sucesso", {
+                usuarioId: dados.usuarioId,
+                bandeira: dados.bandeira,
+                titularidade: dados.titularidade
+            });
+
+            return cartao;
+        } catch (error) {
+            LoggerService.error("Erro ao solicitar cartão de crédito", error);
+            throw error;
         }
-
-        return response;
     }
 
-    // Método interno para criar um cartão individual
-    async criarCartao(conta: UsuarioConta, dadosCartao: ICartaoData, isAdicionalEspecial: boolean = false): Promise<Cartao> {
-        // VERIFICAÇÃO: Garante que o cliente não possa ter dois cartões com a mesma bandeira e tipo.
-        const cartaoExistente = conta.cartoes.find(
-            cartao => cartao.bandeira === dadosCartao.bandeira && cartao.tipo === dadosCartao.tipo && cartao.titularidade === dadosCartao.titularidade
-        );
+    static async buscarCartoesUsuario(usuarioId: string) {
+        try {
+            const cartoes = await this.repository.find({
+                where: { usuarioConta: { id: usuarioId } },
+                order: { dataCriacao: "DESC" }
+            });
 
-        if (cartaoExistente) {
-            throw new DuplicateCardError(`O cliente já possui um cartão de ${dadosCartao.tipo} (${dadosCartao.titularidade}) da bandeira ${dadosCartao.bandeira}.`);
+            return cartoes;
+        } catch (error) {
+            LoggerService.error("Erro ao buscar cartões do usuário", error);
+            throw error;
         }
-
-        // Lógica para o número do cartão especial
-        const numeroDoCartao = isAdicionalEspecial
-            ? gerarNumeroCartao().substring(0, 11) + "0000"
-            : gerarNumeroCartao();
-
-        const novoCartao = this.cartaoRepository.create({
-            usuarioConta: conta,
-            tipo: dadosCartao.tipo,
-            titularidade: dadosCartao.titularidade,
-            bandeira: dadosCartao.bandeira,
-            numero: numeroDoCartao,
-            cvv: gerarCVV(),
-            dataValidade: gerarDataValidade(),
-            status: StatusCartao.ATIVO,
-            limite: dadosCartao.tipo === TipoCartao.CREDITO ? dadosCartao.limite : null,
-        });
-
-        await this.cartaoRepository.save(novoCartao);
-        return novoCartao;
     }
 
-    // ... (métodos atualizarCartao e excluirCartao permanecem os mesmos)
-    async atualizarCartao(cartaoId: string, data: IAtualizarCartaoData): Promise<Cartao | null> {
-        const cartao = await this.cartaoRepository.findOneBy({ id: cartaoId });
-        if (!cartao) {
-            return null;
-        }
+    static async definirPIN(cartaoId: string, pinAtual: string, novoPIN: string) {
+        try {
+            const cartao = await this.repository.findOne({
+                where: { id: cartaoId },
+                select: ["id", "tipo", "pin"]
+            });
 
-        // Atualiza o limite apenas se for um cartão de crédito
-        if (data.limite !== undefined && cartao.tipo === TipoCartao.CREDITO) {
-            cartao.limite = data.limite;
-        }
+            if (!cartao) {
+                throw new Error("Cartão não encontrado");
+            }
 
-        if (data.status !== undefined) {
-            cartao.status = data.status;
-        }
+            if (cartao.tipo !== TipoCartao.DEBITO) {
+                throw new Error("Apenas cartões de débito possuem PIN");
+            }
 
-        await this.cartaoRepository.save(cartao);
-        return cartao;
+            if (!cartao.pin) {
+                throw new Error("PIN não definido para este cartão");
+            }
+
+            const pinAtualValido = await bcrypt.compare(pinAtual, cartao.pin);
+            if (!pinAtualValido) {
+                throw new Error("PIN atual incorreto");
+            }
+
+            const novoPINHash = await bcrypt.hash(novoPIN, 10);
+            cartao.pin = novoPINHash;
+            await this.repository.save(cartao);
+
+            LoggerService.info("PIN alterado com sucesso", { cartaoId });
+
+            return { mensagem: "PIN alterado com sucesso" };
+        } catch (error) {
+            LoggerService.error("Erro ao alterar PIN", error);
+            throw error;
+        }
     }
 
-    async excluirCartao(cartaoId: string): Promise<boolean> {
-        const result = await this.cartaoRepository.delete(cartaoId);
-        // Retorna true se uma linha foi afetada (excluída)
-        return result.affected !== 0;
+    static async validarPIN(cartaoId: string, pin: string): Promise<boolean> {
+        try {
+            const cartao = await this.repository.findOne({
+                where: { id: cartaoId },
+                select: ["id", "tipo", "pin", "status"]
+            });
+
+            if (!cartao) {
+                throw new Error("Cartão não encontrado");
+            }
+
+            if (cartao.tipo !== TipoCartao.DEBITO) {
+                throw new Error("Apenas cartões de débito possuem PIN");
+            }
+
+            if (cartao.status !== StatusCartao.ATIVO) {
+                throw new Error("Cartão não está ativo");
+            }
+
+            if (!cartao.pin) {
+                throw new Error("PIN não definido para este cartão");
+            }
+
+            const pinValido = await bcrypt.compare(pin, cartao.pin);
+            return pinValido;
+        } catch (error) {
+            LoggerService.error("Erro ao validar PIN", error);
+            throw error;
+        }
+    }
+
+    static async bloquearCartao(cartaoId: string) {
+        try {
+            const cartao = await this.repository.findOne({
+                where: { id: cartaoId }
+            });
+
+            if (!cartao) {
+                throw new Error("Cartão não encontrado");
+            }
+
+            cartao.status = StatusCartao.BLOQUEADO;
+            await this.repository.save(cartao);
+
+            LoggerService.info("Cartão bloqueado", { cartaoId });
+
+            return cartao;
+        } catch (error) {
+            LoggerService.error("Erro ao bloquear cartão", error);
+            throw error;
+        }
+    }
+
+    static async desbloquearCartao(cartaoId: string) {
+        try {
+            const cartao = await this.repository.findOne({
+                where: { id: cartaoId }
+            });
+
+            if (!cartao) {
+                throw new Error("Cartão não encontrado");
+            }
+
+            cartao.status = StatusCartao.ATIVO;
+            await this.repository.save(cartao);
+
+            LoggerService.info("Cartão desbloqueado", { cartaoId });
+
+            return cartao;
+        } catch (error) {
+            LoggerService.error("Erro ao desbloquear cartão", error);
+            throw error;
+        }
+    }
+
+    // Método de Admin
+    static async atualizarLimite(cartaoId: string, limite: number) {
+        try {
+            const cartao = await this.repository.findOne({
+                where: { id: cartaoId }
+            });
+
+            if (!cartao) {
+                throw new Error("Cartão não encontrado");
+            }
+
+            if (cartao.tipo !== TipoCartao.CREDITO) {
+                throw new Error("Apenas cartões de crédito podem ter limite alterado");
+            }
+
+            cartao.limite = limite;
+            await this.repository.save(cartao);
+
+            LoggerService.info("Limite do cartão atualizado por admin", {
+                cartaoId,
+                limite
+            });
+
+            return cartao;
+        } catch (error) {
+            LoggerService.error("Erro ao atualizar limite do cartão", error);
+            throw error;
+        }
+    }
+
+    private static gerarNumeroCartao(): string {
+        return "4" + Math.random().toString().slice(2, 16);
+    }
+
+    private static gerarCVV(): string {
+        return Math.random().toString().slice(2, 5);
+    }
+
+    private static gerarDataValidade(): string {
+        const data = new Date();
+        data.setFullYear(data.getFullYear() + 5);
+        return `${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear().toString().slice(-2)}`;
     }
 }

@@ -1,8 +1,33 @@
 openapi: 3.0.0
 info:
   title: API Banco Principal
-  description: API para gerenciamento de contas e operações bancárias com papéis de usuário.
-  version: 3.2.0
+  description: |
+    API bancária completa desenvolvida em TypeScript com SQLite, oferecendo funcionalidades de gestão de clientes, cartões e transações financeiras com controle de acesso baseado em roles (admin/operador).
+    
+    ## Status Atual - ✅ FUNCIONANDO
+    - ✅ Servidor: Rodando na porta 3000
+    - ✅ Banco de Dados: SQLite conectado e sincronizado
+    - ✅ Autenticação: JWT funcionando
+    - ✅ Documentação: Swagger acessível em /api-docs
+    - ✅ Health Check: Funcionando em /health
+    - ✅ Admin Padrão: Criado automaticamente
+    
+    ## Correções Realizadas
+    - ✅ Erro de Tipo ENUM no SQLite corrigido
+    - ✅ Melhoria no Campo Tipo de Movimentação
+    - ✅ Servidor funcionando perfeitamente
+    
+    ## Usuário Admin Padrão
+    - CPF: 00000000000
+    - Senha: AdminSenhaForte123
+    - Role: admin
+  version: 2.0.0
+  contact:
+    name: Equipe de Desenvolvimento
+    email: suporte@banco.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 servers:
   - url: http://localhost:3000
     description: Servidor de Desenvolvimento
@@ -20,100 +45,371 @@ components:
         id:
           type: string
           format: uuid
+          example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
         tipo:
           type: string
           enum: [debito, credito]
+          example: "credito"
         titularidade:
           type: string
           enum: [titular, adicional]
+          example: "titular"
+        bandeira:
+          type: string
+          enum: [master, mastercard, visa, elo, amex]
+          example: "visa"
         numero:
           type: string
-          example: "5123 4567 8901 2345"
+          example: "428460675172344"
+        cvv:
+          type: string
+          example: "438"
         dataValidade:
           type: string
-          example: "12/28"
+          example: "08/30"
         status:
           type: string
           enum: [ativo, bloqueado]
+          example: "ativo"
         limite:
           type: number
           format: float
           nullable: true
+          example: 1500
+        pin:
+          type: string
+          nullable: true
+          example: null
         dataCriacao:
           type: string
           format: date-time
+          example: "2025-08-02T17:41:15.000Z"
+        usuarioConta:
+          $ref: '#/components/schemas/UsuarioConta'
     UsuarioConta:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          example: "0b4fe053-84c3-4524-92e9-2555bd24b353"
         nomeCompleto:
           type: string
+          example: "João Silva Teste"
         cpf:
           type: string
+          example: "12345678901"
+        agencia:
+          type: string
+          example: "0001"
+        numeroConta:
+          type: string
+          example: "37688147"
         role:
           type: string
           enum: [admin, operador]
+          example: "admin"
         limiteCredito:
           type: number
           format: float
           description: "Limite de crédito total da conta."
+          example: 1000
+        creditoUtilizado:
+          type: number
+          format: float
+          description: "Crédito utilizado da conta."
+          example: 0
+        saldo:
+          type: number
+          format: float
+          description: "Saldo atual da conta."
+          example: 200
+        ativo:
+          type: boolean
+          description: "Indica se a conta está ativa."
+          example: true
+        contaBloqueada:
+          type: boolean
+          example: false
         limiteDebitoDiario:
           type: number
           format: float
           description: "Limite de débito diário da conta."
-        ativo:
-          type: boolean
-          description: "Indica se a conta está ativa ou desativada (soft delete)."
-        contaBloqueada:
-          type: boolean
+          example: 5000
         dataCriacao:
           type: string
           format: date-time
+          example: "2025-08-02T17:41:14.000Z"
         dataAtualizacao:
           type: string
           format: date-time
+          example: "2025-08-02T17:41:14.000Z"
         cartoes:
           type: array
           items:
             $ref: '#/components/schemas/Cartao'
+    SaldoResponse:
+      type: object
+      properties:
+        saldo:
+          type: number
+          format: float
+          example: 200
+        limiteCredito:
+          type: number
+          format: float
+          example: 1000
+        creditoUtilizado:
+          type: number
+          format: float
+          example: 0
+        creditoDisponivel:
+          type: number
+          format: float
+          example: 1000
+    Movimentacao:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "e8ffcb17-aa14-4830-8e31-3ca7199391fe"
+        tipo:
+          type: string
+          enum: [transferencia_enviada, transferencia_recebida, compra_credito, pagamento_fatura, deposito]
+          example: "transferencia_enviada"
+        valor:
+          type: number
+          format: float
+          example: 50
+        descricao:
+          type: string
+          example: "Transferência enviada para Maria Silva (0001/12345678)"
+        agenciaOrigem:
+          type: string
+          example: "0001"
+        contaOrigem:
+          type: string
+          example: "87654321"
+        agenciaDestino:
+          type: string
+          example: "0001"
+        contaDestino:
+          type: string
+          example: "12345678"
+        estabelecimento:
+          type: string
+          example: "Loja Exemplo"
+        data:
+          type: string
+          format: date-time
+          example: "2025-08-02T17:41:17.000Z"
+        usuarioConta:
+          $ref: '#/components/schemas/UsuarioConta'
+    ExtratoResponse:
+      type: object
+      properties:
+        movimentacoes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Movimentacao'
+        paginacao:
+          type: object
+          properties:
+            pagina:
+              type: integer
+              example: 1
+            limite:
+              type: integer
+              example: 10
+            total:
+              type: integer
+              example: 2
+            totalPaginas:
+              type: integer
+              example: 1
+    TransferenciaResponse:
+      type: object
+      properties:
+        mensagem:
+          type: string
+          example: "Transferência realizada com sucesso"
+        dados:
+          type: object
+          properties:
+            agenciaOrigem:
+              type: string
+              example: "0001"
+            contaOrigem:
+              type: string
+              example: "87654321"
+            agenciaDestino:
+              type: string
+              example: "0001"
+            contaDestino:
+              type: string
+              example: "12345678"
+            valor:
+              type: number
+              format: float
+              example: 100.00
+            data:
+              type: string
+              format: date-time
+              example: "2025-08-02T17:41:17.000Z"
+    DepositoResponse:
+      type: object
+      properties:
+        mensagem:
+          type: string
+          example: "Depósito realizado com sucesso"
+        dados:
+          type: object
+          properties:
+            agencia:
+              type: string
+              example: "0001"
+            conta:
+              type: string
+              example: "12345678"
+            valor:
+              type: number
+              format: float
+              example: 500.00
+            saldoAtual:
+              type: number
+              format: float
+              example: 700.00
+            data:
+              type: string
+              format: date-time
+              example: "2025-08-02T17:41:17.000Z"
+    RelatorioResponse:
+      type: object
+      properties:
+        resumo:
+          type: object
+          properties:
+            totalClientes:
+              type: integer
+              example: 7
+            clientesAtivos:
+              type: integer
+              example: 6
+            clientesBloqueados:
+              type: integer
+              example: 1
+            totalSaldo:
+              type: number
+              format: float
+              example: 1500.00
+            totalCartoes:
+              type: integer
+              example: 14
+        clientes:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              nomeCompleto:
+                type: string
+              cpf:
+                type: string
+              saldo:
+                type: number
+                format: float
+              ativo:
+                type: boolean
+              contaBloqueada:
+                type: boolean
+              totalCartoes:
+                type: integer
     ApiError:
       type: object
       properties:
-        type:
+        erro:
           type: string
-          description: "Uma referência URI que identifica o tipo do problema."
-          example: "/errors/dados-duplicados"
-        title:
+          description: "Mensagem de erro"
+          example: "Valor mínimo para transferência é R$ 10,00"
+    SuccessResponse:
+      type: object
+      properties:
+        mensagem:
           type: string
-          description: "Um resumo curto e legível do problema."
-          example: "Dados já cadastrados"
+          description: "Mensagem de sucesso"
+          example: "Compra realizada com sucesso"
+    HealthResponse:
+      type: object
+      properties:
         status:
-          type: integer
-          description: "O código de status HTTP gerado pelo servidor."
-          example: 400
-        detail:
           type: string
-          description: "Uma explicação legível e específica da ocorrência do problema."
-          example: "O CPF informado já está em uso."
-        instance:
+          example: "healthy"
+        database:
           type: string
-          description: "O caminho do endpoint onde o erro ocorreu."
-          example: "/usuarios-contas"
+          example: "connected"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-08-02T17:32:30.586Z"
+    ApiInfoResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "API Banco Principal v2.0.0"
+        status:
+          type: string
+          example: "online"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-08-02T17:32:30.586Z"
 
 tags:
   - name: "Autenticação"
-    description: "Operações de login."
-  - name: "Contas (Operador & Admin)"
-    description: "Operações de criação de contas."
-  - name: "Contas (Admin)"
-    description: "Operações de consulta, manutenção e desativação de contas, exclusivas para Admins."
-  - name: "Cartões (Admin)"
-    description: "Operações de gerenciamento de cartões, exclusivas para Admins."
+    description: "Operações de login e autenticação."
+  - name: "Clientes"
+    description: "Operações de gestão de clientes."
+  - name: "Cartões"
+    description: "Operações de gestão de cartões."
+  - name: "Transações"
+    description: "Operações financeiras e transações."
+  - name: "Consultas"
+    description: "Consultas e relatórios do sistema."
+  - name: "Administração"
+    description: "Operações exclusivas para administradores."
 
 paths:
-  /usuarios-contas/login:
+  /:
+    get:
+      tags: ["Consultas"]
+      summary: "Informações da API"
+      description: "Retorna informações básicas sobre a API."
+      responses:
+        '200':
+          description: "Informações da API retornadas com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiInfoResponse'
+
+  /health:
+    get:
+      tags: ["Consultas"]
+      summary: "Health Check"
+      description: "Verifica o status de saúde da API e conexão com banco de dados."
+      responses:
+        '200':
+          description: "API saudável."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /auth/login:
     post:
       tags: ["Autenticação"]
       summary: "Autentica um usuário e retorna um token JWT."
@@ -125,14 +421,36 @@ paths:
               type: object
               required: [cpf, senha]
               properties:
-                cpf: { type: string, example: "111.222.333-44" }
-                senha: { type: string, format: password, example: "SenhaValida123" }
+                cpf: 
+                  type: string
+                  example: "00000000000"
+                senha: 
+                  type: string
+                  format: password
+                  example: "AdminSenhaForte123"
       responses:
         '200':
           description: "Login bem-sucedido."
           content:
             application/json:
-              schema: { type: object, properties: { token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." } } }
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  usuario:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      nomeCompleto:
+                        type: string
+                      cpf:
+                        type: string
+                      role:
+                        type: string
         '401':
           description: "CPF ou senha inválidos."
           content:
@@ -140,15 +458,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
 
-  /usuarios-contas:
+  /clientes:
     post:
-      tags: ["Contas (Operador & Admin)"]
-      summary: "Cria um novo usuário (Operador ou Admin)."
-      description: |
-        Cria uma nova conta e gera um cartão de débito automaticamente.
-        - **Operadores** podem criar apenas outros operadores com limite de crédito fixo de 500.
-        - **Admins** podem criar operadores ou outros admins, definindo todos os limites, status e papel.
-      security: [{ bearerAuth: [] }]
+      tags: ["Clientes"]
+      summary: "Cria um novo cliente."
+      description: "Cria uma nova conta e gera um cartão de débito automaticamente."
       requestBody:
         required: true
         content:
@@ -157,29 +471,34 @@ paths:
               type: object
               required: [nomeCompleto, cpf, senha]
               properties:
-                nomeCompleto: { type: string, example: "Novo Operador" }
-                cpf: { type: string, example: "123.456.789-11" }
-                senha: { type: string, format: password, example: "SenhaForte123" }
-                role: { type: string, enum: [admin, operador], description: "(Admin only) Define o papel do novo usuário.", example: "operador" }
-                limiteCredito: { type: number, description: "(Admin only) Define o limite de crédito da conta.", example: 2000.00 }
-                limiteDebitoDiario: { type: number, description: "(Admin only) Define o limite de débito diário da conta.", example: 5000.00 }
-                contaBloqueada: { type: boolean, description: "(Admin only) Define se a conta já começa bloqueada.", example: false }
+                nomeCompleto: 
+                  type: string
+                  example: "João Silva Teste"
+                cpf: 
+                  type: string
+                  example: "12345678901"
+                senha: 
+                  type: string
+                  format: password
+                  example: "SenhaForte123"
       responses:
-        '201': { description: "Usuário criado com sucesso." }
+        '201':
+          description: "Cliente criado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioConta'
         '400':
-          description: "Erro de validação, dados inválidos ou CPF já cadastrado."
+          description: "Dados inválidos ou CPF já cadastrado."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
-        '401': { description: "Não autorizado." }
-        '403': { description: "Acesso negado." }
 
     get:
-      tags: ["Contas (Admin)"]
-      summary: "Lista todas as contas ativas (Admin only)."
-      description: "Retorna uma lista de todas as contas ativas e seus cartões. Requer permissão de Administrador."
-      security: [{ bearerAuth: [] }]
+      tags: ["Clientes"]
+      summary: "Lista todas as contas ativas."
+      description: "Retorna uma lista de todas as contas ativas e seus cartões."
       responses:
         '200':
           description: "Lista de contas retornada com sucesso."
@@ -189,49 +508,52 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/UsuarioConta'
-        '401': { description: "Não autorizado." }
-        '403': { description: "Acesso negado." }
 
-  /usuarios-contas/{id}:
-    patch:
-      tags: ["Contas (Admin)"]
-      summary: "Realiza manutenção em uma conta (Admin only)."
-      description: "Atualiza os limites ou o status de bloqueio de uma conta. Requer permissão de Administrador."
-      security: [{ bearerAuth: [] }]
+  /clientes/{id}:
+    get:
+      tags: ["Clientes"]
+      summary: "Consulta cliente específico."
       parameters:
-        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                limiteCredito: { type: number, example: 5000.00 }
-                limiteDebitoDiario: { type: number, example: 10000.00 }
-                contaBloqueada: { type: boolean, example: true }
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '200': { description: "Conta atualizada com sucesso." }
-        '401': { description: "Não autorizado." }
-        '403': { description: "Acesso negado." }
+        '200':
+          description: "Cliente encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioConta'
         '404':
-          description: "Conta não encontrada."
+          description: "Cliente não encontrado."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
-    delete:
-      tags: ["Contas (Admin)"]
-      summary: "Desativa uma conta (Soft Delete, Admin only)."
-      description: "Marca uma conta como inativa e a bloqueia, em vez de excluí-la permanentemente. Requer permissão de Administrador."
-      security: [{ bearerAuth: [] }]
+
+  /clientes/{id}/saldo:
+    get:
+      tags: ["Clientes"]
+      summary: "Consulta saldo e informações de crédito."
       parameters:
-        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '204': { description: "Conta desativada com sucesso." }
-        '401': { description: "Não autorizado." }
-        '403': { description: "Acesso negado." }
-        '404':
-          description: "Conta não encontrada."
+        '200':
+          description: "Saldo consultado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaldoResponse'
+        '400':
+          description: "Erro ao consultar saldo."
           content:
             application/json:
               schema:
@@ -239,25 +561,112 @@ paths:
 
   /cartoes:
     post:
-      tags: ["Cartões (Admin)"]
-      summary: "Cria um novo cartão de crédito para um usuário (Admin only)."
-      description: "Oferece um cartão de crédito (titular ou adicional) para uma conta existente."
-      security: [{ bearerAuth: [] }]
+      tags: ["Cartões"]
+      summary: "Solicita cartão de crédito."
+      description: "Cria um novo cartão de crédito para uma conta existente."
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [cpf, limite, titularidade]
+              required: [usuarioId, bandeira, titularidade]
               properties:
-                cpf: { type: string, description: "CPF do titular da conta que receberá o cartão.", example: "12345678900" }
-                limite: { type: number, description: "Limite de crédito do cartão." }
-                titularidade: { type: string, enum: [titular, adicional], description: "Se o cartão é para o titular ou um adicional." }
+                usuarioId:
+                  type: string
+                  format: uuid
+                  description: "ID do usuário que receberá o cartão."
+                  example: "0b4fe053-84c3-4524-92e9-2555bd24b353"
+                bandeira:
+                  type: string
+                  enum: ["visa", "master", "elo", "amex"]
+                  description: "Bandeira do cartão."
+                  example: "visa"
+                titularidade:
+                  type: string
+                  enum: ["titular", "adicional"]
+                  description: "Se o cartão é para o titular ou um adicional."
+                  example: "titular"
+                limite:
+                  type: number
+                  format: float
+                  description: "Limite de crédito do cartão."
+                  example: 1500
       responses:
-        '201': { description: "Cartão de crédito criado com sucesso." }
-        '404':
-          description: "Conta de usuário não encontrada."
+        '201':
+          description: "Cartão de crédito criado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cartao'
+        '400':
+          description: "Dados inválidos ou usuário não encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /cartoes/cliente/{usuarioId}:
+    get:
+      tags: ["Cartões"]
+      summary: "Lista cartões do cliente."
+      parameters:
+        - name: usuarioId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: "Cartões listados com sucesso."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cartao'
+        '400':
+          description: "Erro ao listar cartões."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /cartoes/{id}/pin:
+    patch:
+      tags: ["Cartões"]
+      summary: "Define PIN do cartão (apenas débito)."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pinAtual, novoPIN]
+              properties:
+                pinAtual:
+                  type: string
+                  example: "1234"
+                novoPIN:
+                  type: string
+                  example: "5678"
+      responses:
+        '200':
+          description: "PIN alterado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '400':
+          description: "Erro ao alterar PIN."
           content:
             application/json:
               schema:
@@ -265,15 +674,24 @@ paths:
 
   /cartoes/{id}/bloquear:
     patch:
-      tags: ["Cartões (Admin)"]
-      summary: "Bloqueia um cartão específico (Admin only)."
-      security: [{ bearerAuth: [] }]
+      tags: ["Cartões"]
+      summary: "Bloqueia um cartão."
       parameters:
-        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '200': { description: "Cartão bloqueado com sucesso.", content: { application/json: { schema: { $ref: '#/components/schemas/Cartao' } } } }
-        '404':
-          description: "Cartão não encontrado."
+        '200':
+          description: "Cartão bloqueado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cartao'
+        '400':
+          description: "Erro ao bloquear cartão."
           content:
             application/json:
               schema:
@@ -281,16 +699,408 @@ paths:
 
   /cartoes/{id}/desbloquear:
     patch:
-      tags: ["Cartões (Admin)"]
-      summary: "Desbloqueia um cartão específico (Admin only)."
-      security: [{ bearerAuth: [] }]
+      tags: ["Cartões"]
+      summary: "Desbloqueia um cartão."
       parameters:
-        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '200': { description: "Cartão desbloqueado com sucesso.", content: { application/json: { schema: { $ref: '#/components/schemas/Cartao' } } } }
-        '404':
-          description: "Cartão não encontrado."
+        '200':
+          description: "Cartão desbloqueado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cartao'
+        '400':
+          description: "Erro ao desbloquear cartão."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+
+  /transacoes/transferir:
+    post:
+      tags: ["Transações"]
+      summary: "Realiza transferência entre contas por agência/conta."
+      description: "Transfere valor entre contas usando agência/conta e PIN do cartão de débito. Valor mínimo R$ 10,00 e máximo R$ 5.000,00."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agenciaOrigem, contaOrigem, agenciaDestino, contaDestino, valor, cartaoId, pin]
+              properties:
+                agenciaOrigem:
+                  type: string
+                  description: "Agência da conta de origem"
+                  example: "0001"
+                contaOrigem:
+                  type: string
+                  description: "Número da conta de origem"
+                  example: "87654321"
+                agenciaDestino:
+                  type: string
+                  description: "Agência da conta de destino"
+                  example: "0001"
+                contaDestino:
+                  type: string
+                  description: "Número da conta de destino"
+                  example: "12345678"
+                valor:
+                  type: number
+                  format: float
+                  description: "Valor da transferência (mínimo R$ 10,00, máximo R$ 5.000,00)"
+                  example: 100.00
+                cartaoId:
+                  type: string
+                  format: uuid
+                  description: "ID do cartão de débito"
+                  example: "31d55a19-96af-485d-bd21-ad6ac22f9065"
+                pin:
+                  type: string
+                  description: "PIN do cartão de débito"
+                  example: "1234"
+      responses:
+        '200':
+          description: "Transferência realizada com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferenciaResponse'
+        '400':
+          description: "Erro na transferência."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /transacoes/depositar:
+    post:
+      tags: ["Transações"]
+      summary: "Realiza depósito em conta."
+      description: "Deposita valor em uma conta específica usando agência e número da conta."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agencia, conta, valor]
+              properties:
+                agencia:
+                  type: string
+                  description: "Agência da conta"
+                  example: "0001"
+                conta:
+                  type: string
+                  description: "Número da conta"
+                  example: "12345678"
+                valor:
+                  type: number
+                  format: float
+                  description: "Valor do depósito"
+                  example: 500.00
+      responses:
+        '200':
+          description: "Depósito realizado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositoResponse'
+        '400':
+          description: "Erro no depósito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /transacoes/compra-credito:
+    post:
+      tags: ["Transações"]
+      summary: "Realiza compra no cartão de crédito."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cartaoId, valor, estabelecimento]
+              properties:
+                cartaoId:
+                  type: string
+                  format: uuid
+                  example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
+                valor:
+                  type: number
+                  format: float
+                  example: 100.00
+                estabelecimento:
+                  type: string
+                  example: "Loja Teste"
+      responses:
+        '200':
+          description: "Compra realizada com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: "Erro na compra."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /transacoes/pagar-fatura:
+    post:
+      tags: ["Transações"]
+      summary: "Paga fatura do cartão de crédito."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [usuarioId, valor]
+              properties:
+                usuarioId:
+                  type: string
+                  format: uuid
+                  example: "0b4fe053-84c3-4524-92e9-2555bd24b353"
+                valor:
+                  type: number
+                  format: float
+                  example: 50.00
+      responses:
+        '200':
+          description: "Fatura paga com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: "Erro ao pagar fatura."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /transacoes/extrato/{usuarioId}:
+    get:
+      tags: ["Transações"]
+      summary: "Consulta extrato de movimentações."
+      parameters:
+        - name: usuarioId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: "Extrato retornado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtratoResponse'
+        '400':
+          description: "Erro ao consultar extrato."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # Rotas de Administração (Admin only)
+  /admin/clientes/{id}/limite:
+    patch:
+      tags: ["Administração"]
+      summary: "Atualiza limites de crédito (Admin only)."
+      description: "Permite que administradores atualizem os limites de crédito e débito diário de um cliente."
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [limiteCredito]
+              properties:
+                limiteCredito:
+                  type: number
+                  format: float
+                  example: 5000.00
+                limiteDebitoDiario:
+                  type: number
+                  format: float
+                  example: 10000.00
+      responses:
+        '200':
+          description: "Limites atualizados com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioConta'
+        '400':
+          description: "Dados inválidos."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação necessário."
+        '403':
+          description: "Acesso negado. Apenas administradores."
+
+  /admin/clientes/{id}/bloquear:
+    patch:
+      tags: ["Administração"]
+      summary: "Bloqueia/desbloqueia conta (Admin only)."
+      description: "Permite que administradores bloqueiem ou desbloqueiem contas de clientes."
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contaBloqueada]
+              properties:
+                contaBloqueada:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: "Status da conta alterado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioConta'
+        '400':
+          description: "Dados inválidos."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação necessário."
+        '403':
+          description: "Acesso negado. Apenas administradores."
+
+  /admin/cartoes/{id}/limite:
+    patch:
+      tags: ["Administração"]
+      summary: "Atualiza limite do cartão (Admin only)."
+      description: "Permite que administradores atualizem o limite de cartões de crédito."
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [limite]
+              properties:
+                limite:
+                  type: number
+                  format: float
+                  example: 3000.00
+      responses:
+        '200':
+          description: "Limite do cartão atualizado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cartao'
+        '400':
+          description: "Dados inválidos."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação necessário."
+        '403':
+          description: "Acesso negado. Apenas administradores."
+
+  /admin/clientes/{id}:
+    delete:
+      tags: ["Administração"]
+      summary: "Desativa conta (Admin only)."
+      description: "Permite que administradores desativem contas de clientes (soft delete)."
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: "Conta desativada com sucesso."
+        '400':
+          description: "Erro ao desativar conta."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação necessário."
+        '403':
+          description: "Acesso negado. Apenas administradores."
+
+  /admin/relatorio:
+    get:
+      tags: ["Administração"]
+      summary: "Gera relatório geral (Admin only)."
+      description: "Permite que administradores gerem relatórios com estatísticas do sistema."
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: "Relatório gerado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelatorioResponse'
+        '401':
+          description: "Token de autenticação necessário."
+        '403':
+          description: "Acesso negado. Apenas administradores."
+        '500':
+          description: "Erro interno do servidor."

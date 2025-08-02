@@ -1,51 +1,97 @@
-// src/routes/cartaoRoutes.ts
-import { Router } from "express";
-import { body, param } from "express-validator";
-import { authMiddleware } from "../middleware/authMiddleware";
+import { Router, Request, Response } from "express";
+import { body } from "express-validator";
+import { CartaoService } from "../services/CartaoService";
+import { BandeiraCartao, TitularidadeCartao } from "../entities/Cartao";
 import { validateRequest } from "../middleware/validateRequest";
-import { CartaoController } from "../controllers/CartaoController";
-import { BandeiraCartao, StatusCartao } from "../entities/Cartao";
+import { LoggerService } from "../services/LoggerService";
 
 const router = Router();
-const cartaoController = new CartaoController();
 
-// Rota para solicitar um novo cartão de CRÉDITO
-router.post(
-    "/credito",
-    authMiddleware,
+interface SolicitarCartaoRequest {
+    usuarioId: string;
+    bandeira: BandeiraCartao;
+    titularidade: TitularidadeCartao;
+    limite?: number;
+}
+
+interface DefinirPINRequest {
+    pinAtual: string;
+    novoPIN: string;
+}
+
+// POST /cartoes - Solicitar cartão de crédito
+router.post("/",
     [
-        body("cpf").notEmpty().withMessage("O CPF do titular da conta é obrigatório."),
-        body("bandeira").isIn(Object.values(BandeiraCartao)).withMessage("A bandeira do cartão é inválida."),
-        body("limite").isFloat({ gt: 0 }).withMessage("O limite para cartão de crédito é obrigatório e deve ser maior que zero."),
-        // NOVO: Validação para o campo opcional de geração de cartão adicional
-        body("gerarAdicional").optional().isBoolean().withMessage("O campo 'gerarAdicional' deve ser um booleano (true/false)."),
+        body("usuarioId").notEmpty().withMessage("ID do usuário é obrigatório"),
+        body("bandeira").isIn(["master", "visa", "elo", "amex"]).withMessage("Bandeira inválida"),
+        body("titularidade").isIn(["titular", "adicional"]).withMessage("Titularidade inválida"),
+        body("limite").optional().isFloat({ min: 100 }).withMessage("Limite deve ser maior que R$ 100"),
         validateRequest
     ],
-    cartaoController.solicitarCredito // Chama o novo método do controller
+    async (req: Request<{}, {}, SolicitarCartaoRequest>, res: Response) => {
+        try {
+            const cartao = await CartaoService.solicitarCartaoCredito(req.body);
+            return res.status(201).json(cartao);
+        } catch (error) {
+            LoggerService.error("Erro ao solicitar cartão", error);
+            return res.status(400).json({ erro: (error as Error).message });
+        }
+    }
 );
 
-// Rota para atualizar um cartão (limite, status)
-router.patch(
-    "/:id",
-    authMiddleware,
+// GET /cartoes/cliente/:usuarioId - Listar cartões do cliente
+router.get("/cliente/:usuarioId", async (req: Request, res: Response) => {
+    try {
+        const cartoes = await CartaoService.buscarCartoesUsuario(req.params.usuarioId);
+        return res.json(cartoes);
+    } catch (error) {
+        LoggerService.error("Erro ao buscar cartões do usuário", error);
+        return res.status(400).json({ erro: (error as Error).message });
+    }
+});
+
+// PATCH /cartoes/:id/pin - Definir PIN do cartão
+router.patch("/:id/pin",
     [
-        param("id").isUUID().withMessage("ID do cartão inválido."),
-        body("limite").optional().isFloat({ gt: 0 }).withMessage("O limite deve ser um número maior que zero."),
-        body("status").optional().isIn(Object.values(StatusCartao)).withMessage("O status do cartão é inválido (ativo ou bloqueado)."),
+        body("pinAtual").isLength({ min: 4, max: 4 }).withMessage("PIN atual deve ter 4 dígitos"),
+        body("novoPIN").isLength({ min: 4, max: 4 }).withMessage("Novo PIN deve ter 4 dígitos"),
         validateRequest
     ],
-    cartaoController.atualizar
+    async (req: Request<{ id: string }, {}, DefinirPINRequest>, res: Response) => {
+        try {
+            const resultado = await CartaoService.definirPIN(
+                req.params.id,
+                req.body.pinAtual,
+                req.body.novoPIN
+            );
+            return res.json(resultado);
+        } catch (error) {
+            LoggerService.error("Erro ao definir PIN", error);
+            return res.status(400).json({ erro: (error as Error).message });
+        }
+    }
 );
 
-// Rota para excluir um cartão
-router.delete(
-    "/:id",
-    authMiddleware,
-    [
-        param("id").isUUID().withMessage("ID do cartão inválido."),
-        validateRequest
-    ],
-    cartaoController.excluir
-);
+// PATCH /cartoes/:id/bloquear - Bloquear cartão
+router.patch("/:id/bloquear", async (req: Request<{ id: string }>, res: Response) => {
+    try {
+        const cartao = await CartaoService.bloquearCartao(req.params.id);
+        return res.json(cartao);
+    } catch (error) {
+        LoggerService.error("Erro ao bloquear cartão", error);
+        return res.status(400).json({ erro: (error as Error).message });
+    }
+});
 
-export default router;
+// PATCH /cartoes/:id/desbloquear - Desbloquear cartão
+router.patch("/:id/desbloquear", async (req: Request<{ id: string }>, res: Response) => {
+    try {
+        const cartao = await CartaoService.desbloquearCartao(req.params.id);
+        return res.json(cartao);
+    } catch (error) {
+        LoggerService.error("Erro ao desbloquear cartão", error);
+        return res.status(400).json({ erro: (error as Error).message });
+    }
+});
+
+export default router; 

@@ -1,46 +1,53 @@
 // src/middleware/authMiddleware.ts
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { UserRole } from "../entities/UsuarioConta";
+import { LoggerService } from "../services/LoggerService";
 
-const JWT_SECRET = process.env.JWT_SECRET || "desenvolvimento_chave_secreta_padrao";
+const JWT_SECRET = process.env.JWT_SECRET || "sua_chave_secreta_aqui";
 
-/**
- * Estende a interface Request do Express para adicionar as propriedades `userId` e `userRole`.
- * Isso garante type-safety ao acessar os dados do usuário autenticado nos controllers.
- */
 export interface AuthRequest extends Request {
-    userId?: string;
-    userRole?: UserRole;
+    usuario?: {
+        id: string;
+        cpf: string;
+        role: string;
+    };
 }
 
 export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-        return res.status(401).json({ erro: "Token de autenticação não fornecido." });
-    }
-
-    const parts = authHeader.split(" ");
-    if (parts.length !== 2) {
-        return res.status(401).json({ erro: "Token mal formatado." });
-    }
-
-    const [scheme, token] = parts;
-    if (!/^Bearer$/i.test(scheme)) {
-        return res.status(401).json({ erro: "Token com formato inválido (esperado: Bearer)." });
-    }
-
     try {
-        // ATUALIZADO: O payload do token agora contém id e role
-        const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: UserRole };
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.split(' ')[1];
 
-        // Adiciona o ID e o papel do usuário na requisição para uso posterior
-        req.userId = decoded.id;
-        req.userRole = decoded.role;
+        if (!token) {
+            LoggerService.warn("Tentativa de acesso sem token");
+            return res.status(401).json({ erro: "Token de autenticação necessário" });
+        }
 
-        return next();
+        jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
+            if (err) {
+                if (err.name === 'JsonWebTokenError') {
+                    LoggerService.warn("Token inválido");
+                    return res.status(401).json({ erro: "Token inválido" });
+                }
+
+                if (err.name === 'TokenExpiredError') {
+                    LoggerService.warn("Token expirado");
+                    return res.status(401).json({ erro: "Token expirado" });
+                }
+
+                LoggerService.error("Erro ao verificar token", err);
+                return res.status(500).json({ erro: "Erro ao autenticar token" });
+            }
+
+            req.usuario = decoded;
+            LoggerService.info("Token validado com sucesso", { 
+                cpf: decoded.cpf, 
+                role: decoded.role 
+            });
+            next();
+        });
     } catch (error) {
-        return res.status(401).json({ erro: "Token inválido ou expirado." });
+        LoggerService.error("Erro no middleware de autenticação", error);
+        return res.status(500).json({ erro: "Erro interno do servidor" });
     }
 };

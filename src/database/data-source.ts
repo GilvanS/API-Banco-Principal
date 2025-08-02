@@ -2,14 +2,15 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { UsuarioConta } from "../entities/UsuarioConta";
-import { Cartao } from "../entities/Cartao"; // 1. Importar a nova entidade
+import { Cartao } from "../entities/Cartao";
+import { Movimentacao } from "../entities/Movimentacao";
 
 export const AppDataSource = new DataSource({
     type: "sqlite",
-    database: "database.sqlite",
+    database: "banco.sqlite",
     synchronize: true,
     logging: false,
-    entities: [UsuarioConta, Cartao], // 2. Adicionar a nova entidade aqui
+    entities: [UsuarioConta, Cartao, Movimentacao],
     migrations: [],
     subscribers: [],
 });

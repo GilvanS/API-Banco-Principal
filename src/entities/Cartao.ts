@@ -18,6 +18,7 @@ export enum TitularidadeCartao {
 }
 
 export enum BandeiraCartao {
+    MASTER = "master",
     MASTERCARD = "mastercard",
     VISA = "visa",
     ELO = "elo",
@@ -27,36 +28,39 @@ export enum BandeiraCartao {
 @Entity("cartoes")
 export class Cartao {
     @PrimaryGeneratedColumn("uuid")
-    id: string;
+    id!: string;
 
     @ManyToOne(() => UsuarioConta, (conta) => conta.cartoes, { onDelete: 'CASCADE' })
     @JoinColumn({ name: "usuario_conta_id" })
-    usuarioConta: UsuarioConta;
+    usuarioConta!: UsuarioConta;
 
     @Column({ type: "simple-enum", enum: TipoCartao })
-    tipo: TipoCartao;
+    tipo!: TipoCartao;
 
     @Column({ type: "simple-enum", enum: TitularidadeCartao, default: TitularidadeCartao.TITULAR })
-    titularidade: TitularidadeCartao;
+    titularidade!: TitularidadeCartao;
 
     @Column({ type: "simple-enum", enum: BandeiraCartao })
-    bandeira: BandeiraCartao;
+    bandeira!: BandeiraCartao;
 
     @Column("varchar", { length: 19 }) // Formato: 5XXX XXXX XXXX XXXX
-    numero: string;
+    numero!: string;
 
     @Column("varchar", { length: 3 })
-    cvv: string;
+    cvv!: string;
+
+    @Column("varchar", { length: 4, nullable: true, select: false }) // PIN para débito, não selecionado por padrão
+    pin!: string | null;
 
     @Column("varchar")
-    dataValidade: string; // Formato: MM/YY
+    dataValidade!: string; // Formato: MM/YY
 
     @Column({ type: "simple-enum", enum: StatusCartao, default: StatusCartao.ATIVO })
-    status: StatusCartao;
+    status!: StatusCartao;
 
     @Column("float", { nullable: true }) // Limite é aplicável apenas a cartões de crédito
-    limite: number | null;
+    limite!: number | null;
 
     @CreateDateColumn()
-    dataCriacao: Date;
+    dataCriacao!: Date;
 }

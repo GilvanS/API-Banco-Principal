@@ -1,218 +1,319 @@
 // src/services/UsuarioContaService.ts
 import { AppDataSource } from "../database/data-source";
-import { UserRole, UsuarioConta } from "../entities/UsuarioConta";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { DuplicateCpfError } from "./errors/DuplicateCpfError";
-import { FindOneOptions } from "typeorm";
-import { CartaoService } from "./CartaoService";
-import { BandeiraCartao, StatusCartao, TipoCartao, TitularidadeCartao } from "../entities/Cartao";
-import { AuthenticationError } from "./errors/AuthenticationError";
-
-const usuarioContaRepository = AppDataSource.getRepository(UsuarioConta);
-
-// NOVO: Função auxiliar para gerar um número de conta único
-const gerarNumeroConta = (): string => {
-    const numero = Math.floor(1000000 + Math.random() * 9000000).toString();
-    // Simples dígito verificador (soma dos dígitos módulo 10)
-    const digito = numero.split('').reduce((acc, digit) => acc + parseInt(digit), 0) % 10;
-    return `${numero.substring(0, 7)}-${digito}`;
-};
-
-
-// DTO para a resposta da consulta de contas
-export interface IContaResumo {
-    id: string;
-    nomeCompleto: string;
-    cpf: string;
-    agencia: string; // Adicionado
-    numeroConta: string; // Adicionado
-    limiteCredito: number;
-    contaAtiva: boolean;
-    cartoesAtivos: number;
-}
-
-// Interface para criação de conta
-interface IUsuarioContaData {
-    nomeCompleto: string;
-    cpf: string;
-    senha: string;
-    limiteCredito?: number;
-    contaBloqueada?: boolean;
-    limiteDebitoDiario?: number;
-}
-
-// Interface para os dados de login
-interface ILoginData {
-    cpf: string;
-    senha: string;
-}
-
-// Interface para os dados de manutenção de conta
-interface IManutencaoContaData {
-    limiteCredito?: number;
-    contaBloqueada?: boolean;
-    limiteDebitoDiario?: number;
-}
-
-const JWT_SECRET = process.env.JWT_SECRET || "desenvolvimento_chave_secreta_padrao";
+import { UsuarioConta, UserRole } from "../entities/UsuarioConta";
+import { Cartao, TipoCartao, BandeiraCartao } from "../entities/Cartao";
+import { LoggerService } from "./LoggerService";
+import bcrypt from "bcrypt";
 
 export class UsuarioContaService {
-    // ALTERADO: Instanciamos o CartaoService aqui para ser usado
-    private cartaoService = new CartaoService();
+    private static repository = AppDataSource.getRepository(UsuarioConta);
+    private static cartaoRepository = AppDataSource.getRepository(Cartao);
 
-    /**
-     * Cria um novo usuário.
-     */
-    async criar(data: IUsuarioContaData): Promise<Omit<UsuarioConta, "senha">> {
-        const { nomeCompleto, cpf, senha } = data;
+    static async criarCliente(dados: {
+        nomeCompleto: string;
+        cpf: string;
+        senha: string;
+        agencia?: string;
+        numeroConta?: string;
+        role?: string;
+    }) {
+        try {
+            // 1. Verificar se CPF já existe
+            const clienteExistente = await this.repository.findOne({
+                where: { cpf: dados.cpf }
+            });
 
-        const cpfExistente = await usuarioContaRepository.findOne({ where: { cpf } });
-        if (cpfExistente) {
-            throw new DuplicateCpfError();
+            if (clienteExistente) {
+                throw new Error("CPF já cadastrado");
+            }
+
+            // 2. Gerar número da conta e agência
+            const numeroConta = dados.numeroConta || this.gerarNumeroConta();
+            const agencia = dados.agencia || "0001"; // Agência padrão
+
+            // 3. Hash da senha
+            const senhaHash = await bcrypt.hash(dados.senha, 10);
+
+            // 4. Criar cliente
+            const cliente = this.repository.create({
+                nomeCompleto: dados.nomeCompleto,
+                cpf: dados.cpf,
+                senha: senhaHash,
+                agencia,
+                numeroConta,
+                role: dados.role === "admin" ? UserRole.ADMIN : UserRole.OPERADOR,
+                saldo: 200.00 // Saldo inicial
+            });
+
+            await this.repository.save(cliente);
+
+            // 5. Criar cartão de débito inicial
+            await this.criarCartaoDebito(cliente);
+
+            LoggerService.info("Cliente criado com sucesso", { 
+                id: cliente.id, 
+                cpf: dados.cpf 
+            });
+
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao criar cliente", error);
+            throw error;
         }
-
-        const senhaHash = await bcrypt.hash(senha, 10);
-
-        const novoUsuarioData: Partial<UsuarioConta> = {
-            nomeCompleto,
-            cpf,
-            agencia: "0001",
-            numeroConta: gerarNumeroConta(),
-            senha: senhaHash,
-            role: UserRole.ADMIN,
-            limiteCredito: data.limiteCredito ?? 1000.00,
-            contaBloqueada: data.contaBloqueada ?? false,
-            limiteDebitoDiario: data.limiteDebitoDiario ?? 5000.00,
-        };
-
-        const usuarioConta = usuarioContaRepository.create(novoUsuarioData as UsuarioConta);
-        await usuarioContaRepository.save(usuarioConta);
-
-        usuarioConta.cartoes = [];
-
-        await this.cartaoService.criarCartao(usuarioConta, {
-            tipo: TipoCartao.DEBITO,
-            titularidade: TitularidadeCartao.TITULAR,
-            bandeira: BandeiraCartao.MASTERCARD,
-        });
-
-        // Recarrega a entidade para garantir que o cartão de débito esteja nela
-        const usuarioComCartao = await this.buscarPorId(usuarioConta.id);
-
-        // --- SUGESTÃO DE MELHORIA ---
-        // Adiciona uma verificação para o caso (improvável) de o usuário não ser encontrado.
-        // Isso torna o código mais robusto e elimina a necessidade do operador `!`.
-        if (!usuarioComCartao) {
-            // Lançar um erro aqui é apropriado, pois isso indicaria um estado inconsistente grave no sistema.
-            throw new Error("Falha crítica: usuário recém-criado não foi encontrado no banco de dados.");
-        }
-
-        // Agora que a verificação foi feita, podemos remover o '!' com segurança.
-        // @ts-ignore
-        const { senha: _, ...usuarioSemSenha } = usuarioComCartao;
-        return usuarioSemSenha;
     }
 
+    static async buscarPorId(id: string) {
+        try {
+            const cliente = await this.repository.findOne({
+                where: { id },
+                relations: ["cartoes"]
+            });
 
-    // ... (método login permanece o mesmo)
-    async login(data: ILoginData): Promise<string> {
-        const { cpf, senha } = data;
+            if (!cliente) {
+                LoggerService.warn("Cliente não encontrado", { id });
+                return null;
+            }
 
-        const usuario = await usuarioContaRepository.createQueryBuilder("user")
-            .addSelect("user.senha")
-            .addSelect("user.role")
-            .where("user.cpf = :cpf", { cpf })
-            .andWhere("user.ativo = :ativo", { ativo: true })
-            .getOne();
-
-        if (!usuario) {
-            throw new AuthenticationError();
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao buscar cliente", error);
+            throw error;
         }
-
-        const senhaValida = await bcrypt.compare(senha, usuario.senha);
-        if (!senhaValida) {
-            throw new AuthenticationError();
-        }
-
-        const payload = { id: usuario.id, role: usuario.role };
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1d" });
-
-        return token;
     }
 
-    // ... (método atualizarConta permanece o mesmo)
-    async atualizarConta(id: string, data: IManutencaoContaData): Promise<Omit<UsuarioConta, "senha"> | null> {
-        const conta = await this.buscarPorId(id);
-        if (!conta) {
-            return null;
-        }
+    static async buscarPorCPF(cpf: string) {
+        try {
+            const cliente = await this.repository.findOne({
+                where: { cpf },
+                relations: ["cartoes"]
+            });
 
-        if (data.limiteCredito !== undefined) {
-            conta.limiteCredito = data.limiteCredito;
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao buscar cliente por CPF", error);
+            throw error;
         }
-        if (data.contaBloqueada !== undefined) {
-            conta.contaBloqueada = data.contaBloqueada;
-        }
-        if (data.limiteDebitoDiario !== undefined) {
-            conta.limiteDebitoDiario = data.limiteDebitoDiario;
-        }
-
-        await usuarioContaRepository.save(conta);
-        return conta;
     }
 
-    // ... (método desativarConta permanece o mesmo)
-    async desativarConta(id: string): Promise<Omit<UsuarioConta, "senha"> | null> {
-        const conta = await this.buscarPorId(id);
-        if (!conta) {
-            return null;
+    static async buscarTodos() {
+        try {
+            const clientes = await this.repository.find({
+                relations: ["cartoes"],
+                order: { nomeCompleto: "ASC" }
+            });
+
+            return clientes;
+        } catch (error) {
+            LoggerService.error("Erro ao buscar todos os clientes", error);
+            throw error;
         }
-
-        conta.ativo = false;
-        conta.contaBloqueada = true;
-
-        await usuarioContaRepository.save(conta);
-        return conta;
     }
 
-    /**
-     * Busca todas as contas e retorna um resumo formatado.
-     */
-    async buscarTodosResumo(): Promise<IContaResumo[]> {
-        const contas = await usuarioContaRepository.find({
-            where: { ativo: true },
-            relations: ["cartoes"],
-        });
+    static async atualizarSaldo(id: string, valor: number) {
+        try {
+            const cliente = await this.repository.findOne({
+                where: { id }
+            });
 
-        // ALTERADO: Adiciona agencia e numeroConta ao resumo
-        return contas.map(conta => ({
-            id: conta.id,
-            nomeCompleto: conta.nomeCompleto,
-            cpf: conta.cpf,
-            agencia: conta.agencia,
-            numeroConta: conta.numeroConta,
-            limiteCredito: conta.limiteCredito,
-            contaAtiva: !conta.contaBloqueada,
-            cartoesAtivos: conta.cartoes.filter(c => c.status === StatusCartao.ATIVO).length,
-        }));
+            if (!cliente) {
+                throw new Error("Cliente não encontrado");
+            }
+
+            cliente.saldo += valor;
+            await this.repository.save(cliente);
+
+            LoggerService.info("Saldo atualizado", { 
+                id, 
+                valor, 
+                novoSaldo: cliente.saldo 
+            });
+
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao atualizar saldo", error);
+            throw error;
+        }
     }
 
-    /**
-     * Busca um usuário por ID (sem a senha).
-     */
-    async buscarPorId(id: string): Promise<Omit<UsuarioConta, "senha"> | null> {
-        const options: FindOneOptions<UsuarioConta> = { where: { id, ativo: true }, relations: ["cartoes"] };
-        return usuarioContaRepository.findOne(options);
+    static async consultarSaldo(id: string) {
+        try {
+            const cliente = await this.repository.findOne({
+                where: { id },
+                select: ["id", "saldo", "limiteCredito", "creditoUtilizado"]
+            });
+
+            if (!cliente) {
+                throw new Error("Cliente não encontrado");
+            }
+
+            return {
+                saldo: cliente.saldo,
+                limiteCredito: cliente.limiteCredito,
+                creditoUtilizado: cliente.creditoUtilizado,
+                creditoDisponivel: cliente.limiteCredito - cliente.creditoUtilizado
+            };
+        } catch (error) {
+            LoggerService.error("Erro ao consultar saldo", error);
+            throw error;
+        }
     }
 
-    /**
-     * Busca um usuário por CPF.
-     */
-    async buscarPorCpf(cpf: string): Promise<UsuarioConta | null> {
-        return usuarioContaRepository.findOne({
-            where: { cpf, ativo: true },
-            relations: ["cartoes"],
-        });
+    // Métodos de Admin
+    static async atualizarLimites(id: string, limites: {
+        limiteCredito: number;
+        limiteDebitoDiario?: number;
+    }) {
+        try {
+            const cliente = await this.repository.findOne({
+                where: { id }
+            });
+
+            if (!cliente) {
+                throw new Error("Cliente não encontrado");
+            }
+
+            cliente.limiteCredito = limites.limiteCredito;
+            if (limites.limiteDebitoDiario !== undefined) {
+                cliente.limiteDebitoDiario = limites.limiteDebitoDiario;
+            }
+
+            await this.repository.save(cliente);
+
+            LoggerService.info("Limites atualizados por admin", {
+                clienteId: id,
+                limites
+            });
+
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao atualizar limites", error);
+            throw error;
+        }
+    }
+
+    static async bloquearConta(id: string, contaBloqueada: boolean) {
+        try {
+            const cliente = await this.repository.findOne({
+                where: { id }
+            });
+
+            if (!cliente) {
+                throw new Error("Cliente não encontrado");
+            }
+
+            cliente.contaBloqueada = contaBloqueada;
+            await this.repository.save(cliente);
+
+            LoggerService.info("Status de conta alterado por admin", {
+                clienteId: id,
+                contaBloqueada
+            });
+
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao alterar status da conta", error);
+            throw error;
+        }
+    }
+
+    static async desativarConta(id: string) {
+        try {
+            const cliente = await this.repository.findOne({
+                where: { id }
+            });
+
+            if (!cliente) {
+                throw new Error("Cliente não encontrado");
+            }
+
+            cliente.ativo = false;
+            cliente.contaBloqueada = true;
+            await this.repository.save(cliente);
+
+            LoggerService.info("Conta desativada por admin", {
+                clienteId: id
+            });
+
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao desativar conta", error);
+            throw error;
+        }
+    }
+
+    static async gerarRelatorio() {
+        try {
+            const clientes = await this.repository.find({
+                relations: ["cartoes"]
+            });
+
+            const totalClientes = clientes.length;
+            const clientesAtivos = clientes.filter(c => c.ativo).length;
+            const clientesBloqueados = clientes.filter(c => c.contaBloqueada).length;
+            const totalSaldo = clientes.reduce((sum, c) => sum + c.saldo, 0);
+            const totalCartoes = clientes.reduce((sum, c) => sum + c.cartoes.length, 0);
+
+            const relatorio = {
+                resumo: {
+                    totalClientes,
+                    clientesAtivos,
+                    clientesBloqueados,
+                    totalSaldo,
+                    totalCartoes
+                },
+                clientes: clientes.map(c => ({
+                    id: c.id,
+                    nomeCompleto: c.nomeCompleto,
+                    cpf: c.cpf,
+                    saldo: c.saldo,
+                    ativo: c.ativo,
+                    contaBloqueada: c.contaBloqueada,
+                    totalCartoes: c.cartoes.length
+                }))
+            };
+
+            return relatorio;
+        } catch (error) {
+            LoggerService.error("Erro ao gerar relatório", error);
+            throw error;
+        }
+    }
+
+    private static gerarNumeroConta(): string {
+        return Math.random().toString().slice(2, 10);
+    }
+
+    private static async criarCartaoDebito(usuario: UsuarioConta) {
+        try {
+            const cartao = this.cartaoRepository.create({
+                usuarioConta: usuario,
+                tipo: TipoCartao.DEBITO,
+                bandeira: BandeiraCartao.MASTERCARD,
+                numero: this.gerarNumeroCartao(),
+                cvv: this.gerarCVV(),
+                dataValidade: this.gerarDataValidade(),
+                pin: await bcrypt.hash("1234", 10) // PIN padrão
+            });
+
+            await this.cartaoRepository.save(cartao);
+            LoggerService.info("Cartão de débito criado", { usuarioId: usuario.id });
+        } catch (error) {
+            LoggerService.error("Erro ao criar cartão de débito", error);
+            throw error;
+        }
+    }
+
+    private static gerarNumeroCartao(): string {
+        return "5" + Math.random().toString().slice(2, 16);
+    }
+
+    private static gerarCVV(): string {
+        return Math.random().toString().slice(2, 5);
+    }
+
+    private static gerarDataValidade(): string {
+        const data = new Date();
+        data.setFullYear(data.getFullYear() + 5);
+        return `${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear().toString().slice(-2)}`;
     }
 }

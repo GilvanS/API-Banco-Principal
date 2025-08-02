@@ -1,74 +1,54 @@
-// src/database/seeds/create-admin.ts
 import "reflect-metadata";
 import { AppDataSource } from "../data-source";
 import { UsuarioConta, UserRole } from "../../entities/UsuarioConta";
-import bcrypt from "bcryptjs";
-import dotenv from "dotenv";
+import bcrypt from "bcrypt";
+import { LoggerService } from "../../services/LoggerService";
 
-dotenv.config(); // Carrega as variáveis de ambiente
-
-// Função auxiliar para gerar um número de conta, replicada do UsuarioContaService
-// para manter o seed script independente.
-const gerarNumeroConta = (): string => {
-    const numero = Math.floor(1000000 + Math.random() * 9000000).toString();
-    // Simples dígito verificador (soma dos dígitos módulo 10)
-    const digito = numero.split('').reduce((acc, digit) => acc + parseInt(digit), 0) % 10;
-    return `${numero.substring(0, 7)}-${digito}`;
-};
-
-
-const createAdmin = async () => {
+async function criarAdmin() {
     try {
-        console.log("Inicializando conexão com o banco de dados para o seed...");
         await AppDataSource.initialize();
-        console.log("Conexão estabelecida.");
+        LoggerService.info("Conectando ao banco de dados...");
 
-        const usuarioContaRepository = AppDataSource.getRepository(UsuarioConta);
+        const usuarioRepository = AppDataSource.getRepository(UsuarioConta);
 
-        // Pega os dados do admin do .env ou usa valores padrão seguros
-        const adminCpf = process.env.ADMIN_CPF || "00000000000";
-        const adminPassword = process.env.ADMIN_PASSWORD || "AdminSenhaForte123";
+        // Verificar se já existe um admin
+        const adminExistente = await usuarioRepository.findOne({
+            where: { cpf: "00000000000" }
+        });
 
-        // 1. Verifica se o admin já existe
-        const adminExists = await usuarioContaRepository.findOne({ where: { cpf: adminCpf } });
-
-        if (adminExists) {
-            console.log("Usuário admin já existe no banco de dados.");
+        if (adminExistente) {
+            LoggerService.info("Admin já existe no sistema");
             return;
         }
 
-        console.log("Criando usuário admin...");
+        // Criar senha hash
+        const senhaHash = await bcrypt.hash("AdminSenhaForte123", 10);
 
-        // 2. Criptografa a senha
-        const senhaHash = await bcrypt.hash(adminPassword, 10);
-
-        // 3. Cria a entidade do admin
-        const admin = usuarioContaRepository.create({
+        // Criar admin
+        const admin = usuarioRepository.create({
             nomeCompleto: "Administrador do Sistema",
-            cpf: adminCpf,
-            agencia: "0001", // Agência padrão para o admin
-            numeroConta: gerarNumeroConta(), // CORRIGIDO: Gera um número de conta para o admin
+            cpf: "00000000000",
             senha: senhaHash,
-            role: UserRole.ADMIN, // Define o papel como ADMIN
-            limiteCredito: 999999, // Limite alto para o admin
-            contaBloqueada: false,
+            numeroConta: "00000001",
+            agencia: "0001",
+            role: UserRole.ADMIN,
+            saldo: 10000.00,
+            limiteCredito: 50000.00,
+            ativo: true,
+            contaBloqueada: false
         });
 
-        // 4. Salva no banco
-        await usuarioContaRepository.save(admin);
+        await usuarioRepository.save(admin);
 
-        console.log("Usuário admin criado com sucesso!");
+        LoggerService.info("Admin criado com sucesso!");
+        LoggerService.info("CPF: 00000000000");
+        LoggerService.info("Senha: AdminSenhaForte123");
 
+        await AppDataSource.destroy();
     } catch (error) {
-        console.error("Erro ao executar o seed do admin:", error);
-    } finally {
-        // 5. Fecha a conexão com o banco
-        if (AppDataSource.isInitialized) {
-            await AppDataSource.destroy();
-            console.log("Conexão com o banco de dados fechada.");
-        }
+        LoggerService.error("Erro ao criar admin", error);
+        process.exit(1);
     }
-};
+}
 
-// Executa a função
-createAdmin();
+criarAdmin(); 
