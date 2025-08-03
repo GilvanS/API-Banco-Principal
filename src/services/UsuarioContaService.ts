@@ -1,7 +1,7 @@
 // src/services/UsuarioContaService.ts
 import { AppDataSource } from "../database/data-source";
 import { UsuarioConta, UserRole } from "../entities/UsuarioConta";
-import { Cartao, TipoCartao, BandeiraCartao } from "../entities/Cartao";
+import { Cartao, TipoCartao, BandeiraCartao, TitularidadeCartao } from "../entities/Cartao";
 import { LoggerService } from "./LoggerService";
 import bcrypt from "bcrypt";
 
@@ -47,8 +47,8 @@ export class UsuarioContaService {
 
             await this.repository.save(cliente);
 
-            // 5. Criar cartão de débito inicial
-            await this.criarCartaoDebito(cliente);
+            // 5. Criar cartões iniciais (débito Master e crédito Visa)
+            await this.criarCartoesIniciais(cliente);
 
             LoggerService.info("Cliente criado com sucesso", { 
                 id: cliente.id, 
@@ -283,22 +283,43 @@ export class UsuarioContaService {
         return Math.random().toString().slice(2, 10);
     }
 
-    private static async criarCartaoDebito(usuario: UsuarioConta) {
+    private static async criarCartoesIniciais(usuario: UsuarioConta) {
         try {
-            const cartao = this.cartaoRepository.create({
+            // Criar cartão de débito Master
+            const cartaoDebito = this.cartaoRepository.create({
                 usuarioConta: usuario,
                 tipo: TipoCartao.DEBITO,
                 bandeira: BandeiraCartao.MASTERCARD,
+                titularidade: TitularidadeCartao.TITULAR,
                 numero: this.gerarNumeroCartao(),
                 cvv: this.gerarCVV(),
                 dataValidade: this.gerarDataValidade(),
                 pin: await bcrypt.hash("1234", 10) // PIN padrão
             });
 
-            await this.cartaoRepository.save(cartao);
-            LoggerService.info("Cartão de débito criado", { usuarioId: usuario.id });
+            await this.cartaoRepository.save(cartaoDebito);
+
+            // Criar cartão de crédito Visa
+            const cartaoCredito = this.cartaoRepository.create({
+                usuarioConta: usuario,
+                tipo: TipoCartao.CREDITO,
+                bandeira: BandeiraCartao.VISA,
+                titularidade: TitularidadeCartao.TITULAR,
+                numero: this.gerarNumeroCartao(),
+                cvv: this.gerarCVV(),
+                dataValidade: this.gerarDataValidade(),
+                limite: 1000.00 // Limite inicial
+            });
+
+            await this.cartaoRepository.save(cartaoCredito);
+
+            LoggerService.info("Cartões iniciais criados", { 
+                usuarioId: usuario.id,
+                cartaoDebitoId: cartaoDebito.id,
+                cartaoCreditoId: cartaoCredito.id
+            });
         } catch (error) {
-            LoggerService.error("Erro ao criar cartão de débito", error);
+            LoggerService.error("Erro ao criar cartões iniciais", error);
             throw error;
         }
     }

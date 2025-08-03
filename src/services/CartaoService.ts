@@ -9,10 +9,9 @@ export class CartaoService {
     private static repository = AppDataSource.getRepository(Cartao);
     private static usuarioRepository = AppDataSource.getRepository(UsuarioConta);
 
-    static async solicitarCartaoCredito(dados: {
+    static async solicitarCartaoAdicional(dados: {
         usuarioId: string;
         bandeira: BandeiraCartao;
-        titularidade: TitularidadeCartao;
         limite?: number;
     }) {
         try {
@@ -24,28 +23,41 @@ export class CartaoService {
                 throw new Error("Usuário não encontrado");
             }
 
+            // Verificar se o usuário já tem cartão de crédito titular
+            const cartaoTitular = await this.repository.findOne({
+                where: { 
+                    usuarioConta: { id: dados.usuarioId },
+                    tipo: TipoCartao.CREDITO,
+                    titularidade: TitularidadeCartao.TITULAR
+                }
+            });
+
+            if (!cartaoTitular) {
+                throw new Error("Usuário deve ter um cartão de crédito titular antes de solicitar cartão adicional");
+            }
+
             const cartao = this.repository.create({
                 usuarioConta: usuario,
                 tipo: TipoCartao.CREDITO,
                 bandeira: dados.bandeira,
-                titularidade: dados.titularidade,
+                titularidade: TitularidadeCartao.ADICIONAL,
                 numero: this.gerarNumeroCartao(),
                 cvv: this.gerarCVV(),
                 dataValidade: this.gerarDataValidade(),
-                limite: dados.limite || 1000.00
+                limite: dados.limite || 500.00 // Limite menor para cartão adicional
             });
 
             await this.repository.save(cartao);
 
-            LoggerService.info("Cartão de crédito solicitado com sucesso", {
+            LoggerService.info("Cartão adicional solicitado com sucesso", {
                 usuarioId: dados.usuarioId,
                 bandeira: dados.bandeira,
-                titularidade: dados.titularidade
+                titularidade: TitularidadeCartao.ADICIONAL
             });
 
             return cartao;
         } catch (error) {
-            LoggerService.error("Erro ao solicitar cartão de crédito", error);
+            LoggerService.error("Erro ao solicitar cartão adicional", error);
             throw error;
         }
     }

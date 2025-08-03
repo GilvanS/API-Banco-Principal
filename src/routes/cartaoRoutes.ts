@@ -1,16 +1,15 @@
 import { Router, Request, Response } from "express";
 import { body } from "express-validator";
 import { CartaoService } from "../services/CartaoService";
-import { BandeiraCartao, TitularidadeCartao } from "../entities/Cartao";
+import { BandeiraCartao } from "../entities/Cartao";
 import { validateRequest } from "../middleware/validateRequest";
 import { LoggerService } from "../services/LoggerService";
 
 const router = Router();
 
-interface SolicitarCartaoRequest {
+interface SolicitarCartaoAdicionalRequest {
     usuarioId: string;
     bandeira: BandeiraCartao;
-    titularidade: TitularidadeCartao;
     limite?: number;
 }
 
@@ -19,21 +18,20 @@ interface DefinirPINRequest {
     novoPIN: string;
 }
 
-// POST /cartoes - Solicitar cartão de crédito
+// POST /cartoes - Solicitar cartão adicional
 router.post("/",
     [
         body("usuarioId").notEmpty().withMessage("ID do usuário é obrigatório"),
         body("bandeira").isIn(["master", "visa", "elo", "amex"]).withMessage("Bandeira inválida"),
-        body("titularidade").isIn(["titular", "adicional"]).withMessage("Titularidade inválida"),
         body("limite").optional().isFloat({ min: 100 }).withMessage("Limite deve ser maior que R$ 100"),
         validateRequest
     ],
-    async (req: Request<{}, {}, SolicitarCartaoRequest>, res: Response) => {
+    async (req: Request<{}, {}, SolicitarCartaoAdicionalRequest>, res: Response) => {
         try {
-            const cartao = await CartaoService.solicitarCartaoCredito(req.body);
+            const cartao = await CartaoService.solicitarCartaoAdicional(req.body);
             return res.status(201).json(cartao);
         } catch (error) {
-            LoggerService.error("Erro ao solicitar cartão", error);
+            LoggerService.error("Erro ao solicitar cartão adicional", error);
             return res.status(400).json({ erro: (error as Error).message });
         }
     }

@@ -9,11 +9,20 @@ const router = Router();
 interface TransferenciaRequest {
     agenciaOrigem: string;
     contaOrigem: string;
+    nomeOrigem: string;
+    cpfOrigem: string;
     agenciaDestino: string;
     contaDestino: string;
+    nomeDestino: string;
+    cpfDestino: string;
     valor: number;
-    cartaoId: string;
-    pin: string;
+}
+
+interface TransferenciaPIXRequest {
+    cpfOrigem: string;
+    pixDestino: string;
+    tipoPix: "cpf" | "email";
+    valor: number;
 }
 
 interface DepositoRequest {
@@ -22,8 +31,15 @@ interface DepositoRequest {
     valor: number;
 }
 
+interface PagamentoDebitoRequest {
+    numeroCartao: string;
+    pin: string;
+    valor: number;
+    estabelecimento: string;
+}
+
 interface CompraCreditoRequest {
-    cartaoId: string;
+    numeroCartao: string;
     valor: number;
     estabelecimento: string;
 }
@@ -33,16 +49,18 @@ interface PagarFaturaRequest {
     valor: number;
 }
 
-// POST /transacoes/transferir - Transferência entre contas por agência/conta
+// POST /transacoes/transferir - Transferência entre contas por agência/conta/nome/CPF
 router.post("/transferir",
     [
         body("agenciaOrigem").notEmpty().withMessage("Agência de origem é obrigatória"),
         body("contaOrigem").notEmpty().withMessage("Conta de origem é obrigatória"),
+        body("nomeOrigem").notEmpty().withMessage("Nome de origem é obrigatório"),
+        body("cpfOrigem").notEmpty().withMessage("CPF de origem é obrigatório"),
         body("agenciaDestino").notEmpty().withMessage("Agência de destino é obrigatória"),
         body("contaDestino").notEmpty().withMessage("Conta de destino é obrigatória"),
-        body("valor").isFloat({ min: 10, max: 5000 }).withMessage("Valor deve ser entre R$ 10,00 e R$ 5.000,00"),
-        body("cartaoId").notEmpty().withMessage("ID do cartão é obrigatório"),
-        body("pin").isLength({ min: 4, max: 4 }).withMessage("PIN deve ter 4 dígitos"),
+        body("nomeDestino").notEmpty().withMessage("Nome de destino é obrigatório"),
+        body("cpfDestino").notEmpty().withMessage("CPF de destino é obrigatório"),
+        body("valor").isFloat({ min: 10 }).withMessage("Valor deve ser maior ou igual a R$ 10,00"),
         validateRequest
     ],
     async (req: Request<{}, {}, TransferenciaRequest>, res: Response) => {
@@ -51,6 +69,65 @@ router.post("/transferir",
             return res.json(resultado);
         } catch (error) {
             LoggerService.error("Erro ao realizar transferência", error);
+            return res.status(400).json({ erro: (error as Error).message });
+        }
+    }
+);
+
+// POST /transacoes/pix - Transferência PIX por CPF ou email
+router.post("/pix",
+    [
+        body("cpfOrigem").notEmpty().withMessage("CPF de origem é obrigatório"),
+        body("pixDestino").notEmpty().withMessage("PIX de destino é obrigatório"),
+        body("tipoPix").isIn(["cpf", "email"]).withMessage("Tipo PIX deve ser 'cpf' ou 'email'"),
+        body("valor").isFloat({ min: 10 }).withMessage("Valor deve ser maior ou igual a R$ 10,00"),
+        validateRequest
+    ],
+    async (req: Request<{}, {}, TransferenciaPIXRequest>, res: Response) => {
+        try {
+            const resultado = await TransacaoService.transferirPIX(req.body);
+            return res.json(resultado);
+        } catch (error) {
+            LoggerService.error("Erro ao realizar transferência PIX", error);
+            return res.status(400).json({ erro: (error as Error).message });
+        }
+    }
+);
+
+// POST /transacoes/pagamento-debito - Pagamento com cartão de débito
+router.post("/pagamento-debito",
+    [
+        body("numeroCartao").notEmpty().withMessage("Número do cartão é obrigatório"),
+        body("pin").isLength({ min: 4, max: 4 }).withMessage("PIN deve ter 4 dígitos"),
+        body("valor").isFloat({ min: 0.01 }).withMessage("Valor deve ser maior que zero"),
+        body("estabelecimento").notEmpty().withMessage("Estabelecimento é obrigatório"),
+        validateRequest
+    ],
+    async (req: Request<{}, {}, PagamentoDebitoRequest>, res: Response) => {
+        try {
+            const resultado = await TransacaoService.pagamentoDebito(req.body);
+            return res.json(resultado);
+        } catch (error) {
+            LoggerService.error("Erro ao realizar pagamento com débito", error);
+            return res.status(400).json({ erro: (error as Error).message });
+        }
+    }
+);
+
+// POST /transacoes/compra-credito - Compra com cartão de crédito
+router.post("/compra-credito",
+    [
+        body("numeroCartao").notEmpty().withMessage("Número do cartão é obrigatório"),
+        body("valor").isFloat({ min: 0.01 }).withMessage("Valor deve ser maior que zero"),
+        body("estabelecimento").notEmpty().withMessage("Estabelecimento é obrigatório"),
+        validateRequest
+    ],
+    async (req: Request<{}, {}, CompraCreditoRequest>, res: Response) => {
+        try {
+            const resultado = await TransacaoService.compraCredito(req.body);
+            return res.json(resultado);
+        } catch (error) {
+            LoggerService.error("Erro ao realizar compra com crédito", error);
             return res.status(400).json({ erro: (error as Error).message });
         }
     }
@@ -70,25 +147,6 @@ router.post("/depositar",
             return res.json(resultado);
         } catch (error) {
             LoggerService.error("Erro ao realizar depósito", error);
-            return res.status(400).json({ erro: (error as Error).message });
-        }
-    }
-);
-
-// POST /transacoes/compra-credito - Compra no cartão de crédito
-router.post("/compra-credito",
-    [
-        body("cartaoId").notEmpty().withMessage("ID do cartão é obrigatório"),
-        body("valor").isFloat({ min: 0.01 }).withMessage("Valor deve ser maior que zero"),
-        body("estabelecimento").notEmpty().withMessage("Estabelecimento é obrigatório"),
-        validateRequest
-    ],
-    async (req: Request<{}, {}, CompraCreditoRequest>, res: Response) => {
-        try {
-            const resultado = await TransacaoService.compraCredito(req.body);
-            return res.json(resultado);
-        } catch (error) {
-            LoggerService.error("Erro ao realizar compra no crédito", error);
             return res.status(400).json({ erro: (error as Error).message });
         }
     }
@@ -115,14 +173,15 @@ router.post("/pagar-fatura",
 // GET /transacoes/extrato/:usuarioId - Consultar extrato
 router.get("/extrato/:usuarioId", async (req: Request, res: Response) => {
     try {
-        const pagina = parseInt(req.query.pagina as string) || 1;
-        const limite = parseInt(req.query.limite as string) || 10;
-
+        const { usuarioId } = req.params;
+        const { pagina = 1, limite = 10 } = req.query;
+        
         const extrato = await TransacaoService.consultarExtrato(
-            req.params.usuarioId,
-            pagina,
-            limite
+            usuarioId, 
+            parseInt(pagina as string), 
+            parseInt(limite as string)
         );
+        
         return res.json(extrato);
     } catch (error) {
         LoggerService.error("Erro ao consultar extrato", error);
