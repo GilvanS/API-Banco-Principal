@@ -1,0 +1,919 @@
+{
+	"info": {
+		"_postman_id": "2ed07106-15ee-4de9-8316-9649ba4ca045",
+		"name": "API Banco Principal - Fluxo Correto",
+		"description": "Coleção completa para testar a API Banco Principal com fluxo correto de cartões: débito Master e crédito Visa criados automaticamente, adicionais via POST /cartoes, PIX e operações com número do cartão",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "31102805"
+	},
+	"item": [
+		{
+			"name": "Setup Inicial",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Verificar se o servidor está funcionando"
+					},
+					"response": []
+				}
+			],
+			"description": "Configuração inicial e verificação do sistema"
+		},
+		{
+			"name": "Autenticação",
+			"item": [
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar se o login foi bem-sucedido",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    // Salvar token no environment",
+									"    pm.environment.set('authToken', response.token);",
+									"    pm.environment.set('userId', response.user.id);",
+									"    pm.environment.set('userRole', response.user.role);",
+									"    pm.environment.set('tokenExpiry', new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());",
+									"    ",
+									"    console.log('Token salvo no environment');",
+									"    console.log('User ID:', response.user.id);",
+									"    console.log('Role:', response.user.role);",
+									"} else {",
+									"    console.error('Erro no login:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"cpf\": \"00000000000\",\n    \"senha\": \"AdminSenhaForte123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login como administrador do sistema"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de autenticação com scripts para salvar dados no environment"
+		},
+		{
+			"name": "Gestão de Clientes",
+			"item": [
+				{
+					"name": "Criar Cliente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar se o cliente foi criado com sucesso",
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    // Salvar dados do cliente criado no environment",
+									"    pm.environment.set('clienteId', response.id);",
+									"    pm.environment.set('clienteCPF', response.cpf);",
+									"    pm.environment.set('clienteSenha', 'response.senha');",
+									"    pm.environment.set('clienteNome', response.nomeCompleto);",
+									"    pm.environment.set('clienteAgencia', response.agencia);",
+									"    pm.environment.set('clienteConta', response.numeroConta);",
+									"    ",
+									"    console.log('Cliente criado e dados salvos no environment');",
+									"    console.log('Cliente ID:', response.id);",
+									"    console.log('Cliente CPF:', response.cpf);",
+									"    console.log('Cliente Nome:', response.nomeCompleto);",
+									"    console.log('Agência:', response.agencia);",
+									"    console.log('Conta:', response.numeroConta);",
+									"    console.log('Cartões criados automaticamente: Débito Master + Crédito Visa');",
+									"} else {",
+									"    console.error('Erro ao criar cliente:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nomeCompleto\": \"João Silva Santos\",\n    \"cpf\": \"12345678901\",\n    \"senha\": \"SenhaCliente123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/clientes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"clientes"
+							]
+						},
+						"description": "Criar novo cliente (cartões de débito Master e crédito Visa criados automaticamente)"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Clientes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/clientes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"clientes"
+							]
+						},
+						"description": "Listar todos os clientes cadastrados"
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Cliente por ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/clientes/{{clienteId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"clientes",
+								"{{clienteId}}"
+							]
+						},
+						"description": "Buscar cliente específico por ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Consulta saldo e informações de crédito.",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			],
+			"description": "Gestão completa de clientes com scripts para salvar dados no environment"
+		},
+		{
+			"name": "Gestão de Cartões",
+			"item": [
+				{
+					"name": "Solicitar Cartão Adicional",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar se o cartão adicional foi criado com sucesso",
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    // Salvar dados do cartão adicional no environment",
+									"    pm.environment.set('cartaoAdicionalId', response.id);",
+									"    pm.environment.set('cartaoAdicionalNumero', response.numero);",
+									"    pm.environment.set('cartaoAdicionalLimite', response.limite);",
+									"    ",
+									"    console.log('Cartão adicional criado e dados salvos no environment');",
+									"    console.log('Cartão ID:', response.id);",
+									"    console.log('Número:', response.numero);",
+									"    console.log('Limite:', response.limite);",
+									"    console.log('Titularidade:', response.titularidade);",
+									"} else {",
+									"    console.error('Erro ao criar cartão adicional:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"usuarioId\": \"{{clienteId}}\",\n    \"bandeira\": \"mastercard\",\n    \"limite\": 2000.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cartoes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cartoes"
+							]
+						},
+						"description": "Solicitar cartão de crédito adicional para o cliente"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Cartões do Cliente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar se a listagem foi bem-sucedida",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    console.log('Cartões listados com sucesso');",
+									"    console.log('Total de cartões:', response.length);",
+									"    ",
+									"    // Contar tipos de cartões",
+									"    const cartoesDebito = response.filter(c => c.tipo === 'debito').length;",
+									"    const cartoesCredito = response.filter(c => c.tipo === 'credito').length;",
+									"    ",
+									"    console.log('Cartões de débito:', cartoesDebito);",
+									"    console.log('Cartões de crédito:', cartoesCredito);",
+									"    ",
+									"    // Salvar IDs dos cartões se necessário",
+									"    const cartaoDebito = response.find(c => c.tipo === 'debito');",
+									"    const cartaoCredito = response.find(c => c.tipo === 'credito' && c.titularidade === 'titular');",
+									"    ",
+									"    if (cartaoDebito) {",
+									"        pm.environment.set('cartaoDebitoId', cartaoDebito.id);",
+									"        pm.environment.set('cartaoDebitoNumero', cartaoDebito.numero);",
+									"        console.log('Cartão de débito ID salvo:', cartaoDebito.id);",
+									"        console.log('Cartão de débito número salvo:', cartaoDebito.numero);",
+									"    }",
+									"    ",
+									"    if (cartaoCredito) {",
+									"        pm.environment.set('cartaoCreditoId', cartaoCredito.id);",
+									"        pm.environment.set('cartaoCreditoNumero', cartaoCredito.numero);",
+									"        pm.environment.set('cartaoCreditoLimite', cartaoCredito.limite);",
+									"        console.log('Cartão de crédito titular ID salvo:', cartaoCredito.id);",
+									"        console.log('Cartão de crédito número salvo:', cartaoCredito.numero);",
+									"    }",
+									"} else {",
+									"    console.error('Erro ao listar cartões:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/cartoes/cliente/{{clienteId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cartoes",
+								"cliente",
+								"{{clienteId}}"
+							]
+						},
+						"description": "Listar todos os cartões do cliente (débito e crédito criados automaticamente)"
+					},
+					"response": []
+				},
+				{
+					"name": "Definir PIN do Cartão de Débito",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pinAtual\": \"1234\",\n    \"novoPIN\": \"5678\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cartoes/{{cartaoDebitoId}}/pin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cartoes",
+								"{{cartaoDebitoId}}",
+								"pin"
+							]
+						},
+						"description": "Definir novo PIN para o cartão de débito"
+					},
+					"response": []
+				},
+				{
+					"name": "Bloquear Cartão",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/cartoes/{{cartaoCreditoId}}/bloquear",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cartoes",
+								"{{cartaoCreditoId}}",
+								"bloquear"
+							]
+						},
+						"description": "Bloquear cartão de crédito"
+					},
+					"response": []
+				},
+				{
+					"name": "Desbloquear Cartão",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/cartoes/{{cartaoCreditoId}}/desbloquear",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cartoes",
+								"{{cartaoCreditoId}}",
+								"desbloquear"
+							]
+						},
+						"description": "Desbloquear cartão de crédito"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestão de cartões - cartões de débito Master e crédito Visa criados automaticamente, POST /cartoes apenas para adicionais"
+		},
+		{
+			"name": "Operações Financeiras",
+			"item": [
+				{
+					"name": "Transferência entre Contas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar se a transferência foi realizada com sucesso",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    // Salvar dados da transferência no environment",
+									"    pm.environment.set('transferenciaId', response.dados.data);",
+									"    pm.environment.set('transferenciaValor', response.dados.valor);",
+									"    pm.environment.set('transferenciaData', response.dados.data);",
+									"    ",
+									"    console.log('Transferência realizada e dados salvos no environment');",
+									"    console.log('Valor:', response.dados.valor);",
+									"    console.log('Data:', response.dados.data);",
+									"} else {",
+									"    console.error('Erro na transferência:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agenciaOrigem\": \"{{clienteAgencia}}\",\n    \"contaOrigem\": \"{{clienteConta}}\",\n    \"nomeOrigem\": \"{{clienteNome}}\",\n    \"cpfOrigem\": \"{{clienteCPF}}\",\n    \"agenciaDestino\": \"{{clienteAgencia2}}\",\n    \"contaDestino\": \"{{clienteConta2}}\",\n    \"nomeDestino\": \"{{clienteNome2}}\",\n    \"cpfDestino\": \"{{clienteCPF2}}\",\n    \"valor\": 100.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/transferir",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"transacoes",
+								"transferir"
+							]
+						},
+						"description": "Realizar transferência entre contas usando agência, conta, nome e CPF"
+					},
+					"response": []
+				},
+				{
+					"name": "Transferência PIX por CPF",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar se a transferência PIX foi realizada com sucesso",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    console.log('Transferência PIX realizada com sucesso');",
+									"    console.log('PIX Destino:', response.dados.pixDestino);",
+									"    console.log('Tipo PIX:', response.dados.tipoPix);",
+									"    console.log('Valor:', response.dados.valor);",
+									"} else {",
+									"    console.error('Erro na transferência PIX:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"cpfOrigem\": \"06413815493\",\n    \"pixDestino\": \"17574088004\",\n    \"tipoPix\": \"cpf\",\n    \"valor\": 50.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/pix",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"transacoes",
+								"pix"
+							]
+						},
+						"description": "Realizar transferência PIX por CPF (apenas CPF de origem e destino)"
+					},
+					"response": []
+				},
+				{
+					"name": "Transferência PIX por Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar se a transferência PIX foi realizada com sucesso",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    console.log('Transferência PIX realizada com sucesso');",
+									"    console.log('PIX Destino:', response.dados.pixDestino);",
+									"    console.log('Tipo PIX:', response.dados.tipoPix);",
+									"    console.log('Valor:', response.dados.valor);",
+									"} else {",
+									"    console.error('Erro na transferência PIX:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"cpfOrigem\": \"{{clienteCPF}}\",\n    \"pixDestino\": \"maria@email.com\",\n    \"tipoPix\": \"email\",\n    \"valor\": 75.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/pix",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"transacoes",
+								"pix"
+							]
+						},
+						"description": "Realizar transferência PIX por email (apenas CPF de origem e email de destino)"
+					},
+					"response": []
+				},
+				{
+					"name": "Pagamento com Cartão de Débito",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar se o pagamento foi realizado com sucesso",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    console.log('Pagamento com débito realizado com sucesso');",
+									"    console.log('Número do Cartão:', response.dados.numeroCartao);",
+									"    console.log('Estabelecimento:', response.dados.estabelecimento);",
+									"    console.log('Valor:', response.dados.valor);",
+									"    console.log('Saldo Atual:', response.dados.saldoAtual);",
+									"} else {",
+									"    console.error('Erro no pagamento:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"numeroCartao\": \"{{cartaoDebitoNumero}}\",\n    \"pin\": \"1234\",\n    \"valor\": 50.00,\n    \"estabelecimento\": \"Supermercado ABC\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/pagamento-debito",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"transacoes",
+								"pagamento-debito"
+							]
+						},
+						"description": "Realizar pagamento com cartão de débito usando número do cartão"
+					},
+					"response": []
+				},
+				{
+					"name": "Compra com Cartão de Crédito",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar se a compra foi registrada com sucesso",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    console.log('Compra com crédito registrada com sucesso');",
+									"    console.log('Número do Cartão:', response.dados.numeroCartao);",
+									"    console.log('Estabelecimento:', response.dados.estabelecimento);",
+									"    console.log('Valor:', response.dados.valor);",
+									"    console.log('Limite Disponível:', response.dados.limiteDisponivel);",
+									"} else {",
+									"    console.error('Erro na compra:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"numeroCartao\": \"{{cartaoCreditoNumero}}\",\n    \"valor\": 150.00,\n    \"estabelecimento\": \"Loja de Eletrônicos XYZ\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/compra-credito",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"transacoes",
+								"compra-credito"
+							]
+						},
+						"description": "Realizar compra com cartão de crédito usando número do cartão"
+					},
+					"response": []
+				},
+				{
+					"name": "Depósito",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar se o depósito foi realizado com sucesso",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    console.log('Depósito realizado com sucesso');",
+									"    console.log('Valor:', response.valor);",
+									"    console.log('Saldo Atual:', response.saldoAtual);",
+									"} else {",
+									"    console.error('Erro no depósito:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"agencia\": \"{{clienteAgencia}}\",\n    \"conta\": \"{{clienteConta}}\",\n    \"valor\": 500.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/depositar",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"transacoes",
+								"depositar"
+							]
+						},
+						"description": "Realizar depósito na conta"
+					},
+					"response": []
+				},
+				{
+					"name": "Consultar Extrato",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/extrato/{{clienteId}}?pagina=1&limite=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"transacoes",
+								"extrato",
+								"{{clienteId}}"
+							],
+							"query": [
+								{
+									"key": "pagina",
+									"value": "1"
+								},
+								{
+									"key": "limite",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consultar extrato do cliente"
+					},
+					"response": []
+				}
+			],
+			"description": "Operações financeiras com scripts para salvar dados no environment"
+		},
+		{
+			"name": "Funcionalidades Admin",
+			"item": [
+				{
+					"name": "Listar Todos os Usuários",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/usuarios",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"usuarios"
+							]
+						},
+						"description": "Listar todos os usuários (apenas admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Estatísticas do Sistema",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/estatisticas",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"estatisticas"
+							]
+						},
+						"description": "Obter estatísticas do sistema (apenas admin)"
+					},
+					"response": []
+				}
+			],
+			"description": "Funcionalidades exclusivas para administradores"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Script global de pre-request",
+					"// Verificar se o token existe e não expirou",
+					"const token = pm.environment.get('authToken');",
+					"const tokenExpiry = pm.environment.get('tokenExpiry');",
+					"",
+					"// Se não há token ou expirou, fazer login automático como admin",
+					"if (!token || (tokenExpiry && new Date(tokenExpiry) < new Date())) {",
+					"    console.log('Token não encontrado ou expirado. Fazendo login automático...');",
+					"    ",
+					"    // Fazer login como admin",
+					"    const loginRequest = {",
+					"        url: pm.environment.get('baseUrl') + '/auth/login',",
+					"        method: 'POST',",
+					"        header: {",
+					"            'Content-Type': 'application/json'",
+					"        },",
+					"        body: {",
+					"            mode: 'raw',",
+					"            raw: JSON.stringify({",
+					"                cpf: '00000000000',",
+					"                senha: 'AdminSenhaForte123'",
+					"            })",
+					"        }",
+					"    };",
+					"    ",
+					"    pm.sendRequest(loginRequest, function (err, response) {",
+					"        if (err) {",
+					"            console.error('Erro no login automático:', err);",
+					"            return;",
+					"        }",
+					"        ",
+					"        if (response.code === 200) {",
+					"            const loginResponse = response.json();",
+					"            pm.environment.set('authToken', loginResponse.token);",
+					"            pm.environment.set('userId', loginResponse.user.id);",
+					"            pm.environment.set('userRole', loginResponse.user.role);",
+					"            pm.environment.set('tokenExpiry', new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());",
+					"            console.log('Login automático realizado com sucesso');",
+					"        } else {",
+					"            console.error('Erro no login automático:', response.text());",
+					"        }",
+					"    });",
+					"} else {",
+					"    console.log('Token válido encontrado');",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}
