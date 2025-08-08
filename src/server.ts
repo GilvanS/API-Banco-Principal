@@ -27,8 +27,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Rota de teste
 app.get("/", (req, res) => {
-    res.json({ 
-        message: "API Banco Principal v2.0.0", 
+    res.json({
+        message: "API Banco Principal v2.0.0",
         status: "online",
         timestamp: new Date().toISOString()
     });
@@ -36,7 +36,7 @@ app.get("/", (req, res) => {
 
 // Rota de health check
 app.get("/health", (req, res) => {
-    res.json({ 
+    res.json({
         status: "healthy",
         database: "connected",
         timestamp: new Date().toISOString()
@@ -55,7 +55,7 @@ const PORT = process.env.PORT || 3000;
 AppDataSource.initialize()
     .then(async () => {
         LoggerService.info("Banco de dados inicializado com sucesso");
-        
+
         // Criar admin automaticamente se não existir
         try {
             const adminExistente = await UsuarioContaService.buscarPorCPF("00000000000");
@@ -73,7 +73,7 @@ AppDataSource.initialize()
         } catch (error) {
             LoggerService.error("Erro ao criar admin automático", error);
         }
-        
+
         app.listen(PORT, () => {
             LoggerService.info(`Servidor iniciado na porta ${PORT}`);
             LoggerService.info(`Documentação: http://localhost:${PORT}/api-docs`);
