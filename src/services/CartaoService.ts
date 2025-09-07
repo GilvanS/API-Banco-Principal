@@ -231,4 +231,243 @@ export class CartaoService {
         data.setFullYear(data.getFullYear() + 5);
         return `${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear().toString().slice(-2)}`;
     }
+
+    // Novos métodos para a refatoração
+    static async listarCartoes(usuarioId: string) {
+        try {
+            const cartoes = await this.repository.find({
+                where: { usuarioConta: { id: usuarioId } },
+                relations: ["usuarioConta"],
+                order: { dataCriacao: "DESC" }
+            });
+
+            return cartoes.map(cartao => ({
+                id: cartao.id,
+                tipo: cartao.tipo,
+                bandeira: cartao.bandeira,
+                numero: `****${cartao.numero.slice(-4)}`,
+                dataValidade: cartao.dataValidade,
+                limite: cartao.limite,
+                faturaAtual: cartao.faturaAtual || 0,
+                limiteDisponivel: cartao.limiteDisponivel || cartao.limite,
+                dataVencimentoFatura: cartao.dataVencimentoFatura,
+                dataFechamentoFatura: cartao.dataFechamentoFatura,
+                ativo: cartao.ativo,
+                status: cartao.status,
+                isVirtual: cartao.isVirtual || false,
+                permiteCompraOnline: cartao.permiteCompraOnline !== false,
+                permiteCompraExterior: cartao.permiteCompraExterior !== false,
+                permiteSaque: cartao.permiteSaque !== false
+            }));
+        } catch (error) {
+            LoggerService.error("Erro ao listar cartões", error);
+            throw error;
+        }
+    }
+
+    static async solicitarNovoCartao(usuarioId: string, dados: {
+        tipo: TipoCartao;
+        bandeira: BandeiraCartao;
+        isVirtual?: boolean;
+    }) {
+        try {
+            const usuario = await this.usuarioRepository.findOne({
+                where: { id: usuarioId }
+            });
+
+            if (!usuario) {
+                throw new Error("Usuário não encontrado");
+            }
+
+            const cartao = this.repository.create({
+                usuarioConta: usuario,
+                tipo: dados.tipo,
+                bandeira: dados.bandeira,
+                titularidade: TitularidadeCartao.TITULAR,
+                numero: this.gerarNumeroCartao(),
+                cvv: this.gerarCVV(),
+                dataValidade: this.gerarDataValidade(),
+                limite: dados.tipo === TipoCartao.CREDITO ? 1000.00 : 0,
+                faturaAtual: 0,
+                limiteDisponivel: dados.tipo === TipoCartao.CREDITO ? 1000.00 : 0,
+                ativo: true,
+                status: StatusCartao.ATIVO,
+                isVirtual: dados.isVirtual || false,
+                permiteCompraOnline: true,
+                permiteCompraExterior: false,
+                permiteSaque: dados.tipo === TipoCartao.DEBITO
+            });
+
+            // Definir datas de fatura para cartão de crédito
+            if (dados.tipo === TipoCartao.CREDITO) {
+                const hoje = new Date();
+                const dataFechamento = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 5);
+                const dataVencimento = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 15);
+                
+                cartao.dataFechamentoFatura = dataFechamento;
+                cartao.dataVencimentoFatura = dataVencimento;
+            }
+
+            await this.repository.save(cartao);
+
+            LoggerService.info("Novo cartão solicitado", {
+                usuarioId,
+                tipo: dados.tipo,
+                bandeira: dados.bandeira,
+                isVirtual: dados.isVirtual
+            });
+
+            return cartao;
+        } catch (error) {
+            LoggerService.error("Erro ao solicitar novo cartão", error);
+            throw error;
+        }
+    }
+
+    static async consultarFatura(usuarioId: string, cartaoId: string) {
+        try {
+            const cartao = await this.repository.findOne({
+                where: { 
+                    id: cartaoId,
+                    usuarioConta: { id: usuarioId },
+                    tipo: TipoCartao.CREDITO
+                },
+                relations: ["usuarioConta"]
+            });
+
+            if (!cartao) {
+                throw new Error("Cartão de crédito não encontrado");
+            }
+
+            return {
+                faturaAtual: cartao.faturaAtual || 0,
+                limite: cartao.limite,
+                limiteDisponivel: cartao.limiteDisponivel || cartao.limite,
+                dataVencimento: cartao.dataVencimentoFatura,
+                dataFechamento: cartao.dataFechamentoFatura,
+                valorMinimo: (cartao.faturaAtual || 0) * 0.15, // 15% do valor da fatura
+                jurosRotativo: 12.5 // Taxa de juros ao mês
+            };
+        } catch (error) {
+            LoggerService.error("Erro ao consultar fatura", error);
+            throw error;
+        }
+    }
+
+    static async atualizarConfiguracoes(usuarioId: string, cartaoId: string, configuracoes: {
+        permiteCompraOnline?: boolean;
+        permiteCompraExterior?: boolean;
+        permiteSaque?: boolean;
+        limite?: number;
+    }) {
+        try {
+            const cartao = await this.repository.findOne({
+                where: { 
+                    id: cartaoId,
+                    usuarioConta: { id: usuarioId }
+                },
+                relations: ["usuarioConta"]
+            });
+
+            if (!cartao) {
+                throw new Error("Cartão não encontrado");
+            }
+
+            if (configuracoes.permiteCompraOnline !== undefined) {
+                cartao.permiteCompraOnline = configuracoes.permiteCompraOnline;
+            }
+            if (configuracoes.permiteCompraExterior !== undefined) {
+                cartao.permiteCompraExterior = configuracoes.permiteCompraExterior;
+            }
+            if (configuracoes.permiteSaque !== undefined) {
+                cartao.permiteSaque = configuracoes.permiteSaque;
+            }
+            if (configuracoes.limite !== undefined && cartao.tipo === TipoCartao.CREDITO) {
+                cartao.limite = configuracoes.limite;
+                cartao.limiteDisponivel = configuracoes.limite - (cartao.faturaAtual || 0);
+            }
+
+            await this.repository.save(cartao);
+
+            LoggerService.info("Configurações do cartão atualizadas", {
+                usuarioId,
+                cartaoId,
+                configuracoes
+            });
+
+            return cartao;
+        } catch (error) {
+            LoggerService.error("Erro ao atualizar configurações do cartão", error);
+            throw error;
+        }
+    }
+
+    static async bloquearCartaoComMotivo(usuarioId: string, cartaoId: string, motivo: string) {
+        try {
+            const cartao = await this.repository.findOne({
+                where: { 
+                    id: cartaoId,
+                    usuarioConta: { id: usuarioId }
+                },
+                relations: ["usuarioConta"]
+            });
+
+            if (!cartao) {
+                throw new Error("Cartão não encontrado");
+            }
+
+            cartao.status = StatusCartao.BLOQUEADO;
+            cartao.ativo = false;
+            cartao.motivoBloqueio = motivo;
+
+            await this.repository.save(cartao);
+
+            LoggerService.info("Cartão bloqueado", {
+                usuarioId,
+                cartaoId,
+                motivo
+            });
+
+            return cartao;
+        } catch (error) {
+            LoggerService.error("Erro ao bloquear cartão", error);
+            throw error;
+        }
+    }
+
+    static async desbloquearCartaoComValidacao(usuarioId: string, cartaoId: string) {
+        try {
+            const cartao = await this.repository.findOne({
+                where: { 
+                    id: cartaoId,
+                    usuarioConta: { id: usuarioId }
+                },
+                relations: ["usuarioConta"]
+            });
+
+            if (!cartao) {
+                throw new Error("Cartão não encontrado");
+            }
+
+            if (cartao.status !== StatusCartao.BLOQUEADO) {
+                throw new Error("Cartão não está bloqueado");
+            }
+
+            cartao.status = StatusCartao.ATIVO;
+            cartao.ativo = true;
+            cartao.motivoBloqueio = null;
+
+            await this.repository.save(cartao);
+
+            LoggerService.info("Cartão desbloqueado", {
+                usuarioId,
+                cartaoId
+            });
+
+            return cartao;
+        } catch (error) {
+            LoggerService.error("Erro ao desbloquear cartão", error);
+            throw error;
+        }
+    }
 }

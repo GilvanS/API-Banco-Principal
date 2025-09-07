@@ -2,7 +2,7 @@
 import { AppDataSource } from "../database/data-source";
 import { Movimentacao } from "../entities/Movimentacao";
 import { UsuarioConta } from "../entities/UsuarioConta";
-import { Cartao } from "../entities/Cartao";
+import { Cartao, TipoCartao } from "../entities/Cartao";
 import { CartaoService } from "./CartaoService";
 import { LoggerService } from "./LoggerService";
 
@@ -357,7 +357,7 @@ export class TransacaoService {
             const cartao = await this.cartaoRepository.findOne({
                 where: { 
                     numero: dados.numeroCartao,
-                    tipo: "credito"
+                    tipo: TipoCartao.CREDITO
                 },
                 relations: ["usuarioConta"]
             });
@@ -369,7 +369,7 @@ export class TransacaoService {
             const usuario = cartao.usuarioConta;
 
             // 2. Verificar limite disponível
-            if (cartao.limite < dados.valor) {
+            if (!cartao.limite || cartao.limite < dados.valor) {
                 throw new Error("Limite insuficiente para realizar a compra");
             }
 
@@ -395,7 +395,7 @@ export class TransacaoService {
                     numeroCartao: dados.numeroCartao,
                     estabelecimento: dados.estabelecimento,
                     valor: dados.valor,
-                    limiteDisponivel: cartao.limite - dados.valor,
+                    limiteDisponivel: (cartao.limite || 0) - dados.valor,
                     data: new Date()
                 }
             };
@@ -544,7 +544,7 @@ export class TransacaoService {
 
             const [movimentacoes, total] = await this.repository.findAndCount({
                 where: { usuarioConta: { id: usuarioId } },
-                order: { data: "DESC" },
+                order: { dataCriacao: "DESC" },
                 skip: offset,
                 take: limite
             });

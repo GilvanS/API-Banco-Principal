@@ -16,6 +16,13 @@ import cartaoRoutes from "./routes/cartaoRoutes";
 import transacaoRoutes from "./routes/transacaoRoutes";
 import adminRoutes from "./routes/adminRoutes";
 
+// Novas rotas da refatoração
+import accountRoutes from "./routes/accountRoutes";
+import transactionRoutes from "./routes/transactionRoutes";
+import cardRoutes from "./routes/cardRoutes";
+import settingsRoutes from "./routes/settingsRoutes";
+import investmentRoutes from "./routes/investmentRoutes";
+
 const app = express();
 
 app.use(cors());
@@ -43,12 +50,19 @@ app.get("/health", (req, res) => {
     });
 });
 
-// Rotas da API
+// Rotas da API - Legadas
 app.use("/auth", authRoutes);
 app.use("/clientes", clienteRoutes);
 app.use("/cartoes", cartaoRoutes);
 app.use("/transacoes", transacaoRoutes);
 app.use("/admin", adminRoutes);
+
+// Novas rotas da API - Refatoração
+app.use("/api/account", accountRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/cards", cardRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/investments", investmentRoutes);
 
 const PORT = process.env.PORT || 3000;
 

@@ -337,4 +337,88 @@ export class UsuarioContaService {
         data.setFullYear(data.getFullYear() + 5);
         return `${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear().toString().slice(-2)}`;
     }
+
+    // Novos métodos para a refatoração
+    static async atualizarSenha(id: string, novaSenha: string) {
+        try {
+            const cliente = await this.repository.findOne({
+                where: { id }
+            });
+
+            if (!cliente) {
+                throw new Error("Cliente não encontrado");
+            }
+
+            cliente.senha = novaSenha;
+            await this.repository.save(cliente);
+
+            LoggerService.info("Senha atualizada", {
+                clienteId: id
+            });
+
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao atualizar senha", error);
+            throw error;
+        }
+    }
+
+    static async atualizarConfiguracoes(id: string, configuracoes: {
+        notificacoesPush?: boolean;
+        notificacoesEmail?: boolean;
+        notificacoesSms?: boolean;
+        telefone?: string;
+        email?: string;
+        endereco?: string;
+    }) {
+        try {
+            const cliente = await this.repository.findOne({
+                where: { id }
+            });
+
+            if (!cliente) {
+                throw new Error("Cliente não encontrado");
+            }
+
+            if (configuracoes.notificacoesPush !== undefined) {
+                cliente.notificacoesPush = configuracoes.notificacoesPush;
+            }
+            if (configuracoes.notificacoesEmail !== undefined) {
+                cliente.notificacoesEmail = configuracoes.notificacoesEmail;
+            }
+            if (configuracoes.notificacoesSms !== undefined) {
+                cliente.notificacoesSms = configuracoes.notificacoesSms;
+            }
+            if (configuracoes.telefone !== undefined) {
+                cliente.telefone = configuracoes.telefone;
+            }
+            if (configuracoes.email !== undefined) {
+                cliente.email = configuracoes.email;
+            }
+            if (configuracoes.endereco !== undefined) {
+                cliente.endereco = configuracoes.endereco;
+            }
+
+            await this.repository.save(cliente);
+
+            LoggerService.info("Configurações atualizadas", {
+                clienteId: id,
+                configuracoes
+            });
+
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao atualizar configurações", error);
+            throw error;
+        }
+    }
+
+    // Método não estático para compatibilidade com as novas rotas
+    async buscarPorId(id: string) {
+        return UsuarioContaService.buscarPorId(id);
+    }
+
+    async atualizarSaldo(id: string, valor: number) {
+        return UsuarioContaService.atualizarSaldo(id, valor);
+    }
 }

@@ -2,6 +2,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, OneToMany } from "typeorm";
 import { Cartao } from "./Cartao";
 import { Movimentacao } from "./Movimentacao";
+import { Investment } from "./Investment";
+import { Device } from "./Device";
 
 export enum UserRole {
     ADMIN = "admin",
@@ -59,6 +61,57 @@ export class UsuarioConta {
 
     @OneToMany(() => Movimentacao, movimentacao => movimentacao.usuarioConta)
     movimentacoes!: Movimentacao[];
+
+    @OneToMany(() => Investment, investment => investment.usuarioConta)
+    investments!: Investment[];
+
+    @OneToMany(() => Device, device => device.usuarioConta)
+    devices!: Device[];
+
+    @Column({
+        type: 'varchar',
+        length: 15,
+        nullable: true
+    })
+    telefone?: string;
+
+    @Column({
+        type: 'varchar',
+        length: 100,
+        nullable: true
+    })
+    email?: string;
+
+    @Column({
+        type: 'date',
+        nullable: true
+    })
+    dataNascimento?: Date;
+
+    @Column({
+        type: 'varchar',
+        length: 200,
+        nullable: true
+    })
+    endereco?: string;
+
+    @Column({
+        type: 'boolean',
+        default: true
+    })
+    notificacoesPush!: boolean;
+
+    @Column({
+        type: 'boolean',
+        default: true
+    })
+    notificacoesEmail!: boolean;
+
+    @Column({
+        type: 'boolean',
+        default: true
+    })
+    notificacoesSms!: boolean;
 
     @CreateDateColumn()
     dataCriacao!: Date;

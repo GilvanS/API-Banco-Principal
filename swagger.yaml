@@ -144,10 +144,135 @@ components:
           type: string
           format: date-time
           example: "2025-08-02T17:41:14.000Z"
+        telefone:
+          type: string
+          example: "11999999999"
+        email:
+          type: string
+          example: "usuario@email.com"
+        dataNascimento:
+          type: string
+          format: date
+          example: "1990-01-01"
+        endereco:
+          type: string
+          example: "Rua das Flores, 123"
+        notificacoesPush:
+          type: boolean
+          example: true
+        notificacoesEmail:
+          type: boolean
+          example: true
+        notificacoesSms:
+          type: boolean
+          example: false
         cartoes:
           type: array
           items:
             $ref: '#/components/schemas/Cartao'
+        investimentos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Investment'
+        dispositivos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+    Investment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        tipo:
+          type: string
+          enum: [cdb, lci, lca, tesouro_direto, fundos, poupanca]
+          example: "cdb"
+        nome:
+          type: string
+          example: "CDB Banco Principal 120% CDI"
+        valor:
+          type: number
+          format: float
+          example: 1000.00
+        rentabilidade:
+          type: number
+          format: float
+          example: 12.5
+        vencimento:
+          type: string
+          format: date
+          example: "2025-12-31"
+        liquidez:
+          type: string
+          enum: [diaria, mensal, no_vencimento]
+          example: "diaria"
+        risco:
+          type: string
+          enum: [baixo, medio, alto]
+          example: "baixo"
+        valorMinimo:
+          type: number
+          format: float
+          example: 100.00
+        status:
+          type: string
+          enum: [ativo, vencido, resgatado]
+          example: "ativo"
+        dataAplicacao:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:30:00.000Z"
+        valorAtual:
+          type: number
+          format: float
+          example: 1050.25
+        usuarioConta:
+          $ref: '#/components/schemas/UsuarioConta'
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        nome:
+          type: string
+          example: "iPhone 13 Pro"
+        tipo:
+          type: string
+          enum: [mobile, desktop, tablet]
+          example: "mobile"
+        sistemaOperacional:
+          type: string
+          example: "iOS 15.6"
+        navegador:
+          type: string
+          example: "Safari 15.6"
+        enderecoIp:
+          type: string
+          example: "192.168.1.100"
+        localizacao:
+          type: string
+          example: "São Paulo, SP"
+        status:
+          type: string
+          enum: [ativo, bloqueado, removido]
+          example: "ativo"
+        ultimoAcesso:
+          type: string
+          format: date-time
+          example: "2025-01-15T14:30:00.000Z"
+        dataCadastro:
+          type: string
+          format: date-time
+          example: "2025-01-10T09:15:00.000Z"
+        confiavel:
+          type: boolean
+          example: true
+        usuarioConta:
+          $ref: '#/components/schemas/UsuarioConta'
     SaldoResponse:
       type: object
       properties:
@@ -176,7 +301,7 @@ components:
           example: "e8ffcb17-aa14-4830-8e31-3ca7199391fe"
         tipo:
           type: string
-          enum: [transferencia_enviada, transferencia_recebida, compra_credito, pagamento_fatura, deposito]
+          enum: [deposito, saque, transferencia_enviada, transferencia_recebida, pix_enviado, pix_recebido, pagamento_cartao, investimento, rendimento, taxa, estorno]
           example: "transferencia_enviada"
         valor:
           type: number
@@ -185,6 +310,23 @@ components:
         descricao:
           type: string
           example: "Transferência enviada para Maria Silva (0001/12345678)"
+        nomeDestinatario:
+          type: string
+          example: "Maria Silva"
+        chavePix:
+          type: string
+          example: "11999999999"
+        status:
+          type: string
+          enum: [pendente, concluida, cancelada, falhada]
+          example: "concluida"
+        taxa:
+          type: number
+          format: float
+          example: 0
+        observacoes:
+          type: string
+          example: "Observações adicionais"
         agenciaOrigem:
           type: string
           example: "0001"
@@ -381,6 +523,14 @@ tags:
     description: "Consultas e relatórios do sistema."
   - name: "Administração"
     description: "Operações exclusivas para administradores."
+  - name: "Contas"
+    description: "Operações de gestão de contas bancárias."
+  - name: "Configurações"
+    description: "Configurações de usuário e dispositivos."
+  - name: "Investimentos"
+    description: "Operações de investimentos e poupança."
+  - name: "Dispositivos"
+    description: "Gestão de dispositivos autorizados."
 
 paths:
   /:
@@ -1102,5 +1252,103 @@ paths:
           description: "Token de autenticação necessário."
         '403':
           description: "Acesso negado. Apenas administradores."
+
+  # Novos Endpoints - Contas
+  /api/account/balance:
+    get:
+      tags: ["Contas"]
+      summary: "Consultar saldo da conta"
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: "Saldo consultado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaldoResponse'
+        '401':
+          description: "Token de autenticação necessário."
+
+  /api/account/statement:
+    get:
+      tags: ["Contas"]
+      summary: "Consultar extrato da conta"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: "Extrato consultado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtratoResponse'
+        '401':
+          description: "Token de autenticação necessário."
+
+  # Novos Endpoints - Investimentos
+  /api/investments/summary:
+    get:
+      tags: ["Investimentos"]
+      summary: "Resumo de investimentos"
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: "Resumo obtido com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalInvestido:
+                    type: number
+                    format: float
+                    example: 5000.00
+                  totalRendimento:
+                    type: number
+                    format: float
+                    example: 250.75
+                  investimentos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Investment'
+        '401':
+          description: "Token de autenticação necessário."
+
+  /api/investments/savings:
+    get:
+      tags: ["Investimentos"]
+      summary: "Consultar poupança"
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: "Dados da poupança consultados com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saldo:
+                    type: number
+                    format: float
+                    example: 1500.00
+                  rendimentoMensal:
+                    type: number
+                    format: float
+                    example: 7.50
+                  aniversario:
+                    type: integer
+                    example: 15
+        '401':
+          description: "Token de autenticação necessário."
         '500':
           description: "Erro interno do servidor."

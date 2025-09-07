@@ -61,6 +61,71 @@ export class Cartao {
     @Column("float", { nullable: true }) // Limite é aplicável apenas a cartões de crédito
     limite!: number | null;
 
+    @Column({
+        type: 'decimal',
+        precision: 15,
+        scale: 2,
+        default: 0
+    })
+    faturaAtual!: number;
+
+    @Column({
+        type: 'decimal',
+        precision: 15,
+        scale: 2,
+        default: 0
+    })
+    limiteDisponivel!: number;
+
+    @Column({
+        type: 'date',
+        nullable: true
+    })
+    dataVencimentoFatura?: Date;
+
+    @Column({
+        type: 'date',
+        nullable: true
+    })
+    dataFechamentoFatura?: Date;
+
+    @Column({
+        type: 'boolean',
+        default: true
+    })
+    ativo!: boolean;
+
+    @Column({
+        type: 'varchar',
+        length: 100,
+        nullable: true
+    })
+    motivoBloqueio?: string;
+
+    @Column({
+        type: 'boolean',
+        default: false
+    })
+    isVirtual!: boolean;
+
+    @Column({
+        type: 'boolean',
+        default: true
+    })
+    permiteCompraOnline!: boolean;
+
+    @Column({
+        type: 'boolean',
+        default: true
+    })
+    permiteCompraExterior!: boolean;
+
+    @Column({
+        type: 'boolean',
+        default: true
+    })
+    permiteSaque!: boolean;
+
     @CreateDateColumn()
     dataCriacao!: Date;
 }
