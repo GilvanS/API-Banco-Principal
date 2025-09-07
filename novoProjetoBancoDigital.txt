@@ -1,0 +1,630 @@
+Novos Paths (Endpoints):
+1. Operações da Conta (Dashboard e Extrato):
+GET /accounts/{accountId}/balance
+Summary: Obter saldo da conta.
+Description: Retorna o saldo atual de uma conta específica.
+Parameters:
+accountId (path, string, uuid, required): ID da conta.
+Responses: 200 (AccountBalanceResponse), 404 (Conta não encontrada), 401 (Não autorizado).
+Security: bearerAuth
+GET /accounts/{accountId}/statement
+Summary: Obter extrato da conta.
+Description: Retorna o extrato de transações de uma conta, com filtros opcionais por período e tipo de transação.
+Parameters:
+accountId (path, string, uuid, required): ID da conta.
+startDate (query, string, date, optional): Data de início para o extrato.
+endDate (query, string, date, optional): Data de fim para o extrato.
+transactionType (query, string, enum: ['DEPOSIT', 'WITHDRAW', 'TRANSFER_IN', 'TRANSFER_OUT', 'PURCHASE', 'BILL_PAYMENT'], optional): Tipo de transação para filtrar.
+Responses: 200 (StatementResponse), 404, 401.
+Security: bearerAuth
+2. Transações (Depósito, Saque, Transferência):
+POST /transactions/deposit
+Summary: Realizar um depósito.
+Description: Permite realizar um depósito em uma conta específica.
+Parameters:
+depositRequest (body, required, DepositWithdrawRequest)
+Responses: 200 (TransactionResponse), 400, 401.
+Security: bearerAuth
+POST /transactions/withdraw
+Summary: Realizar um saque.
+Description: Permite realizar um saque de uma conta específica.
+Parameters:
+withdrawRequest (body, required, DepositWithdrawRequest)
+Responses: 200 (TransactionResponse), 400 (Saldo insuficiente), 401.
+Security: bearerAuth
+POST /transactions/transfer
+Summary: Realizar uma transferência entre contas.
+Description: Permite transferir dinheiro de uma conta para outra, podendo ser entre contas do mesmo usuário ou para outros usuários.
+Parameters:
+transferRequest (body, required, TransferRequest)
+Responses: 200 (TransactionResponse), 400 (Saldo insuficiente, conta destino inválida), 401.
+Security: bearerAuth
+3. Cartões:
+GET /cards
+Summary: Listar cartões do cliente.
+Description: Retorna uma lista de todos os cartões (débito e crédito) associados ao cliente logado.
+Responses: 200 (CardListResponse), 401.
+Security: bearerAuth
+POST /cards/{cardId}/block
+Summary: Bloquear um cartão.
+Description: Bloqueia um cartão específico por ID.
+Parameters:
+cardId (path, string, uuid, required): ID do cartão a ser bloqueado.
+Responses: 200 (CardStatusUpdateResponse), 404, 401.
+Security: bearerAuth
+POST /cards/{cardId}/unblock
+Summary: Desbloquear um cartão.
+Description: Desbloqueia um cartão específico por ID.
+Parameters:
+cardId (path, string, uuid, required): ID do cartão a ser desbloqueado.
+Responses: 200 (CardStatusUpdateResponse), 404, 401.
+Security: bearerAuth
+GET /cards/{cardId}/invoice
+Summary: Obter fatura do cartão de crédito.
+Description: Retorna os detalhes da fatura de um cartão de crédito, incluindo valor total, valor mínimo e transações.
+Parameters:
+cardId (path, string, uuid, required): ID do cartão de crédito.
+month (query, integer, optional): Mês da fatura (e.g., 6 para Junho).
+year (query, integer, optional): Ano da fatura.
+Responses: 200 (CardInvoiceResponse), 404, 401.
+Security: bearerAuth
+POST /cards/request
+Summary: Solicitar novo cartão.
+Description: Permite ao usuário solicitar um novo cartão (débito ou crédito).
+Parameters:
+cardRequest (body, required, NewCardRequest)
+Responses: 201 (NewCardResponse), 400, 401.
+Security: bearerAuth
+4. Configurações:
+PUT /users/password
+Summary: Alterar senha do usuário.
+Description: Permite que o usuário altere sua senha atual.
+Parameters:
+changePasswordRequest (body, required, ChangePasswordRequest)
+Responses: 200 (SuccessResponse), 400 (Senha atual incorreta), 401.
+Security: bearerAuth
+PUT /users/notifications
+Summary: Atualizar preferências de notificação.
+Description: Permite ao usuário configurar quais tipos de notificações deseja receber.
+Parameters:
+notificationSettings (body, required, NotificationSettingsRequest)
+Responses: 200 (NotificationSettingsResponse), 401.
+Security: bearerAuth
+GET /users/devices
+Summary: Listar dispositivos conectados.
+Description: Retorna uma lista dos dispositivos onde o usuário está logado.
+Responses: 200 (ConnectedDevicesResponse), 401.
+Security: bearerAuth
+DELETE /users/devices/{deviceId}
+Summary: Desconectar dispositivo.
+Description: Remove um dispositivo da lista de sessões ativas do usuário.
+Parameters:
+deviceId (path, string, uuid, required): ID do dispositivo a ser removido.
+Responses: 200 (SuccessResponse), 404, 401.
+Security: bearerAuth
+POST /auth/logout
+Summary: Sair da conta.
+Description: Invalida o token JWT atual, efetuando o logout do usuário.
+Responses: 200 (SuccessResponse), 401.
+Security: bearerAuth
+5. Investimentos:
+GET /investments/summary
+Summary: Obter resumo de investimentos.
+Description: Retorna um resumo do portfólio de investimentos do usuário, incluindo valor total investido, rendimento e distribuição.
+Responses: 200 (InvestmentSummaryResponse), 401.
+Security: bearerAuth
+GET /investments/applications
+Summary: Listar aplicações ativas de investimento.
+Description: Retorna detalhes de cada aplicação de investimento ativa.
+Responses: 200 (ActiveApplicationsResponse), 401.
+Security: bearerAuth
+POST /investments/simulate
+Summary: Simular investimento.
+Description: Simula o rendimento de um investimento com base em valor, período e tipo.
+Parameters:
+simulationRequest (body, required, InvestmentSimulationRequest)
+Responses: 200 (InvestmentSimulationResponse), 400, 401.
+Security: bearerAuth
+POST /investments/apply
+Summary: Realizar nova aplicação de investimento.
+Description: Permite ao usuário realizar uma nova aplicação em um produto de investimento.
+Parameters:
+applicationRequest (body, required, NewInvestmentApplicationRequest)
+Responses: 201 (NewInvestmentApplicationResponse), 400, 401.
+Security: bearerAuth
+GET /investments/savings-program
+Summary: Obter status do programa de poupança programada.
+Description: Retorna informações sobre a poupança programada do usuário.
+Responses: 200 (SavingsProgramResponse), 401.
+Security: bearerAuth
+PUT /investments/savings-program/configure
+Summary: Configurar programa de poupança programada.
+Description: Configura ou atualiza as regras para a poupança automática.
+Parameters:
+savingsProgramConfig (body, required, SavingsProgramConfigRequest)
+Responses: 200 (SavingsProgramResponse), 400, 401.
+Security: bearerAuth
+Novas Definitions (Modelos de Dados):
+code
+Yaml
+definitions:
+  # ... (existing definitions)
+
+  AccountBalanceResponse:
+    type: object
+    properties:
+      accountId:
+        type: string
+        format: uuid
+        example: 'f1e2d3c4-b5a6-9876-5432-10fedcba9876'
+      balance:
+        type: number
+        format: float
+        example: 1250.00
+      currency:
+        type: string
+        example: 'BRL'
+
+  Transaction:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        example: 'g1h2i3j4-k5l6-7890-1234-567890mnop'
+      type:
+        type: string
+        enum: ['DEPOSIT', 'WITHDRAW', 'TRANSFER_IN', 'TRANSFER_OUT', 'PURCHASE', 'BILL_PAYMENT']
+        example: 'TRANSFER_IN'
+      description:
+        type: string
+        example: 'Transferência recebida de John Doe'
+      amount:
+        type: number
+        format: float
+        example: 1500.00
+      date:
+        type: string
+        format: date-time
+        example: '2024-01-15T10:00:00Z'
+      status:
+        type: string
+        enum: ['COMPLETED', 'PENDING', 'FAILED']
+        example: 'COMPLETED'
+      # Pode adicionar mais detalhes como 'fromAccount', 'toAccount', etc.
+
+  StatementResponse:
+    type: object
+    properties:
+      accountId:
+        type: string
+        format: uuid
+        example: 'f1e2d3c4-b5a6-9876-5432-10fedcba9876'
+      transactions:
+        type: array
+        items:
+          $ref: '#/definitions/Transaction'
+
+  DepositWithdrawRequest:
+    type: object
+    required:
+      - accountId
+      - amount
+    properties:
+      accountId:
+        type: string
+        format: uuid
+        description: 'ID da conta para depósito/saque.'
+        example: 'f1e2d3c4-b5a6-9876-5432-10fedcba9876'
+      amount:
+        type: number
+        format: float
+        description: 'Valor da operação.'
+        example: 100.00
+
+  TransferRequest:
+    type: object
+    required:
+      - fromAccountId
+      - toAccountIdentifier
+      - amount
+    properties:
+      fromAccountId:
+        type: string
+        format: uuid
+        description: 'ID da conta de origem.'
+        example: 'f1e2d3c4-b5a6-9876-5432-10fedcba9876'
+      toAccountIdentifier:
+        type: string
+        description: 'Identificador da conta de destino (e.g., número da conta, CPF/CNPJ do recebedor).'
+        example: '987.654.321-00' # Ou '0001-98765-4'
+      amount:
+        type: number
+        format: float
+        description: 'Valor da transferência.'
+        example: 50.00
+      description:
+        type: string
+        description: 'Descrição opcional da transferência.'
+        example: 'Aluguel, presente de aniversário'
+
+  TransactionResponse:
+    type: object
+    properties:
+      transactionId:
+        type: string
+        format: uuid
+        example: 'g1h2i3j4-k5l6-7890-1234-567890mnop'
+      status:
+        type: string
+        enum: ['SUCCESS', 'FAILED', 'PENDING']
+        example: 'SUCCESS'
+      message:
+        type: string
+        example: 'Operação realizada com sucesso.'
+
+  Card:
+    type: object
+    properties:
+      cardId:
+        type: string
+        format: uuid
+        example: 'c1d2e3f4-a5b6-7890-1234-567890ghijkl'
+      type:
+        type: string
+        enum: ['DEBIT', 'CREDIT']
+        example: 'DEBIT'
+      brand:
+        type: string
+        example: 'Mastercard'
+      lastFourDigits:
+        type: string
+        pattern: '^\d{4}$'
+        example: '7890'
+      status:
+        type: string
+        enum: ['ACTIVE', 'BLOCKED']
+        example: 'ACTIVE'
+      limit:
+        type: number
+        format: float
+        example: 5000.00 # Apenas para cartões de crédito
+      dueDate:
+        type: string
+        format: date # Apenas para cartões de crédito
+        example: '2024-07-15'
+
+  CardListResponse:
+    type: object
+    properties:
+      cards:
+        type: array
+        items:
+          $ref: '#/definitions/Card'
+
+  CardStatusUpdateResponse:
+    type: object
+    properties:
+      cardId:
+        type: string
+        format: uuid
+        example: 'c1d2e3f4-a5b6-7890-1234-567890ghijkl'
+      status:
+        type: string
+        enum: ['ACTIVE', 'BLOCKED']
+        example: 'BLOCKED'
+      message:
+        type: string
+        example: 'Cartão bloqueado com sucesso.'
+
+  CardInvoiceItem:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        example: 't1u2v3w4-x5y6-7890-1234-567890mnopqr'
+      description:
+        type: string
+        example: 'Compra em Loja de Eletrônicos'
+      amount:
+        type: number
+        format: float
+        example: 350.00
+      date:
+        type: string
+        format: date
+        example: '2024-06-10'
+
+  CardInvoiceResponse:
+    type: object
+    properties:
+      cardId:
+        type: string
+        format: uuid
+        example: 'c1d2e3f4-a5b6-7890-1234-567890ghijkl'
+      dueDate:
+        type: string
+        format: date
+        example: '2024-07-15'
+      totalAmount:
+        type: number
+        format: float
+        example: 1250.00
+      minimumPayment:
+        type: number
+        format: float
+        example: 250.00
+      transactions:
+        type: array
+        items:
+          $ref: '#/definitions/CardInvoiceItem'
+
+  NewCardRequest:
+    type: object
+    required:
+      - cardType
+    properties:
+      cardType:
+        type: string
+        enum: ['DEBIT', 'CREDIT']
+        description: 'Tipo de cartão a ser solicitado.'
+        example: 'CREDIT'
+      # Pode adicionar campos como limite desejado para crédito, etc.
+
+  NewCardResponse:
+    type: object
+    properties:
+      cardId:
+        type: string
+        format: uuid
+        example: 'c1d2e3f4-a5b6-7890-1234-567890ghijkl'
+      message:
+        type: string
+        example: 'Solicitação de cartão enviada para análise.'
+
+  ChangePasswordRequest:
+    type: object
+    required:
+      - currentPassword
+      - newPassword
+      - confirmNewPassword
+    properties:
+      currentPassword:
+        type: string
+        format: password
+        example: 'SenhaAtual123!'
+      newPassword:
+        type: string
+        format: password
+        minLength: 6
+        example: 'NovaSenhaForte456!'
+      confirmNewPassword:
+        type: string
+        format: password
+        example: 'NovaSenhaForte456!'
+
+  NotificationSettingsRequest:
+    type: object
+    properties:
+      deposit:
+        type: boolean
+        example: true
+      withdraw:
+        type: boolean
+        example: false
+      transfer:
+        type: boolean
+        example: true
+      purchase:
+        type: boolean
+        example: true
+      billPayment:
+        type: boolean
+        example: false
+      balanceAlerts:
+        type: boolean
+        example: true
+
+  NotificationSettingsResponse:
+    type: object
+    properties:
+      userId:
+        type: string
+        format: uuid
+      settings:
+        $ref: '#/definitions/NotificationSettingsRequest'
+
+  ConnectedDevice:
+    type: object
+    properties:
+      deviceId:
+        type: string
+        format: uuid
+        example: 'd1e2f3g4-h5i6-7890-1234-567890pqrstu'
+      browser:
+        type: string
+        example: 'Chrome on Windows'
+      location:
+        type: string
+        example: 'Rio de Janeiro, Brasil'
+      lastActive:
+        type: string
+        format: date-time
+        example: '2024-07-20T14:30:00Z'
+
+  ConnectedDevicesResponse:
+    type: object
+    properties:
+      devices:
+        type: array
+        items:
+          $ref: '#/definitions/ConnectedDevice'
+
+  SuccessResponse:
+    type: object
+    properties:
+      message:
+        type: string
+        example: 'Operação realizada com sucesso.'
+
+  InvestmentSummaryResponse:
+    type: object
+    properties:
+      patrimonyTotal:
+        type: number
+        format: float
+        example: 25845.70
+      totalReturn:
+        type: number
+        format: float
+        example: 2310.50
+      distribution:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+              example: 'CDB 120% CDI'
+            amount:
+              type: number
+              format: float
+              example: 15000.00
+      applications:
+        type: array
+        items:
+          $ref: '#/definitions/ActiveApplication'
+
+  ActiveApplication:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        example: 'inv123-abc'
+      name:
+        type: string
+        example: 'CDB 120% CDI'
+      appliedValue:
+        type: number
+        format: float
+        example: 14000.00
+      grossBalance:
+        type: number
+        format: float
+        example: 15000.00
+      profitability:
+        type: string # Pode ser float se for percentual puro
+        example: '+7.14%' # Ou 0.0714
+
+  InvestmentSimulationRequest:
+    type: object
+    required:
+      - investmentValue
+      - periodMonths
+      - investmentType
+    properties:
+      investmentValue:
+        type: number
+        format: float
+        example: 1000.00
+      periodMonths:
+        type: integer
+        example: 12
+      investmentType:
+        type: string
+        example: 'CDB 120% CDI' # Ou um ID/código de produto
+
+  InvestmentSimulationResponse:
+    type: object
+    properties:
+      investedValue:
+        type: number
+        format: float
+        example: 1000.00
+      grossReturn:
+        type: number
+        format: float
+        example: 120.00
+      finalValue:
+        type: number
+        format: float
+        example: 1120.00
+
+  NewInvestmentApplicationRequest:
+    type: object
+    required:
+      - accountId
+      - investmentProductId
+      - amount
+    properties:
+      accountId:
+        type: string
+        format: uuid
+        description: 'ID da conta de onde o dinheiro será debitado.'
+        example: 'f1e2d3c4-b5a6-9876-5432-10fedcba9876'
+      investmentProductId:
+        type: string
+        format: uuid
+        description: 'ID do produto de investimento (e.g., CDB, Fundo Multimercado).'
+        example: 'prod-cdb-xyz'
+      amount:
+        type: number
+        format: float
+        description: 'Valor a ser aplicado.'
+        example: 500.00
+
+  NewInvestmentApplicationResponse:
+    type: object
+    properties:
+      applicationId:
+        type: string
+        format: uuid
+        example: 'app-inv-123'
+      message:
+        type: string
+        example: 'Aplicação realizada com sucesso.'
+
+  SavingsProgramResponse:
+    type: object
+    properties:
+      isActive:
+        type: boolean
+        example: true
+      frequency:
+        type: string
+        enum: ['MONTHLY', 'WEEKLY']
+        example: 'MONTHLY'
+      amount:
+        type: number
+        format: float
+        example: 200.00
+      targetGoal:
+        type: string
+        example: 'Viagem de Férias' # Opcional
+      nextDepositDate:
+        type: string
+        format: date
+        example: '2024-08-01'
+
+  SavingsProgramConfigRequest:
+    type: object
+    properties:
+      isActive:
+        type: boolean
+        example: true
+      frequency:
+        type: string
+        enum: ['MONTHLY', 'WEEKLY']
+        example: 'MONTHLY'
+      amount:
+        type: number
+        format: float
+        example: 250.00
+      targetGoal:
+        type: string
+        example: 'Carro Novo'
+
+  # Outras definições (AccountResponse, User, etc.) permanecem as mesmas
+Com essa atualização, o swagger agora abrange uma grande parte das funcionalidades mostradas nas imagens, desde o registro e login até o dashboard, extrato, operações financeiras, gerenciamento de cartões, configurações e até mesmo investimentos.
