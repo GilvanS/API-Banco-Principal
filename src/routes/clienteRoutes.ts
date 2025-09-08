@@ -11,8 +11,8 @@ interface CreateClienteRequest {
     nomeCompleto: string;
     cpf: string;
     senha: string;
-    email: string;
-    tipoConta: TipoConta;
+    email?: string;
+    tipoConta?: TipoConta;
     agencia?: string;
     numeroConta?: string;
 }

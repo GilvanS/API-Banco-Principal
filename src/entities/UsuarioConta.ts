@@ -83,9 +83,9 @@ export class UsuarioConta {
     @Column({
         type: 'varchar',
         length: 100,
-        nullable: false
+        nullable: true
     })
-    email!: string;
+    email?: string;
 
     @Column({
         type: 'varchar',

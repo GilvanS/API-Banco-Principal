@@ -13,8 +13,8 @@ export class UsuarioContaService {
         nomeCompleto: string;
         cpf: string;
         senha: string;
-        email: string;
-        tipoConta: TipoConta;
+        email?: string;
+        tipoConta?: TipoConta;
         agencia?: string;
         numeroConta?: string;
         role?: string;
@@ -42,7 +42,7 @@ export class UsuarioContaService {
                 cpf: dados.cpf,
                 senha: senhaHash,
                 email: dados.email,
-                tipoConta: dados.tipoConta,
+                tipoConta: dados.tipoConta || TipoConta.CORRENTE,
                 agencia,
                 numeroConta,
                 role: dados.role === "admin" ? UserRole.ADMIN : UserRole.OPERADOR,
