@@ -1,6 +1,6 @@
 // src/services/UsuarioContaService.ts
 import { AppDataSource } from "../database/data-source";
-import { UsuarioConta, UserRole } from "../entities/UsuarioConta";
+import { UsuarioConta, UserRole, TipoConta } from "../entities/UsuarioConta";
 import { Cartao, TipoCartao, BandeiraCartao, TitularidadeCartao } from "../entities/Cartao";
 import { LoggerService } from "./LoggerService";
 import bcrypt from "bcrypt";
@@ -13,6 +13,8 @@ export class UsuarioContaService {
         nomeCompleto: string;
         cpf: string;
         senha: string;
+        email: string;
+        tipoConta: TipoConta;
         agencia?: string;
         numeroConta?: string;
         role?: string;
@@ -39,6 +41,8 @@ export class UsuarioContaService {
                 nomeCompleto: dados.nomeCompleto,
                 cpf: dados.cpf,
                 senha: senhaHash,
+                email: dados.email,
+                tipoConta: dados.tipoConta,
                 agencia,
                 numeroConta,
                 role: dados.role === "admin" ? UserRole.ADMIN : UserRole.OPERADOR,

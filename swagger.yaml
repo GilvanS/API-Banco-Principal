@@ -619,7 +619,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [nomeCompleto, cpf, senha]
+              required: [nomeCompleto, cpf, senha, email, tipoConta]
               properties:
                 nomeCompleto: 
                   type: string
@@ -631,6 +631,15 @@ paths:
                   type: string
                   format: password
                   example: "SenhaForte123"
+                email:
+                  type: string
+                  format: email
+                  example: "joao.silva@email.com"
+                tipoConta:
+                  type: string
+                  enum: ["poupanca", "corrente"]
+                  example: "corrente"
+                  description: "Tipo de conta: poupança ou corrente"
       responses:
         '201':
           description: "Cliente criado com sucesso."

@@ -3,6 +3,7 @@ import { body } from "express-validator";
 import { UsuarioContaService } from "../services/UsuarioContaService";
 import { validateRequest } from "../middleware/validateRequest";
 import { LoggerService } from "../services/LoggerService";
+import { TipoConta } from "../entities/UsuarioConta";
 
 const router = Router();
 
@@ -10,6 +11,8 @@ interface CreateClienteRequest {
     nomeCompleto: string;
     cpf: string;
     senha: string;
+    email: string;
+    tipoConta: TipoConta;
     agencia?: string;
     numeroConta?: string;
 }
@@ -20,6 +23,8 @@ router.post("/",
         body("nomeCompleto").notEmpty().withMessage("Nome completo é obrigatório"),
         body("cpf").isLength({ min: 11, max: 14 }).withMessage("CPF inválido"),
         body("senha").isLength({ min: 6 }).withMessage("Senha deve ter no mínimo 6 caracteres"),
+        body("email").isEmail().withMessage("Email inválido"),
+        body("tipoConta").isIn(Object.values(TipoConta)).withMessage("Tipo de conta deve ser 'poupanca' ou 'corrente'"),
         validateRequest
     ],
     async (req: Request<{}, {}, CreateClienteRequest>, res: Response) => {
@@ -75,4 +80,4 @@ router.get("/", async (req: Request, res: Response) => {
     }
 });
 
-export default router; 
+export default router;

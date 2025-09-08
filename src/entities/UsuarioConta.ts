@@ -10,6 +10,11 @@ export enum UserRole {
     OPERADOR = "operador"
 }
 
+export enum TipoConta {
+    POUPANCA = "poupanca",
+    CORRENTE = "corrente"
+}
+
 @Entity("usuarios_contas")
 export class UsuarioConta {
     @PrimaryGeneratedColumn("uuid")
@@ -78,9 +83,16 @@ export class UsuarioConta {
     @Column({
         type: 'varchar',
         length: 100,
-        nullable: true
+        nullable: false
     })
-    email?: string;
+    email!: string;
+
+    @Column({
+        type: 'varchar',
+        length: 20,
+        default: TipoConta.CORRENTE
+    })
+    tipoConta!: TipoConta;
 
     @Column({
         type: 'date',
