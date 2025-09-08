@@ -538,12 +538,50 @@ export class TransacaoService {
         }
     }
 
-    static async consultarExtrato(usuarioId: string, pagina: number = 1, limite: number = 10) {
+    static async consultarExtrato(
+        usuarioId: string, 
+        pagina: number = 1, 
+        limite: number = 10,
+        startDate?: string,
+        endDate?: string,
+        transactionType?: string
+    ) {
         try {
             const offset = (pagina - 1) * limite;
+            
+            // Construir filtros dinâmicos
+            const where: any = { usuarioConta: { id: usuarioId } };
+            
+            // Filtro por data
+            if (startDate || endDate) {
+                where.dataCriacao = {};
+                if (startDate) {
+                    where.dataCriacao.gte = new Date(startDate);
+                }
+                if (endDate) {
+                    where.dataCriacao.lte = new Date(endDate);
+                }
+            }
+            
+            // Filtro por tipo de transação
+            if (transactionType) {
+                // Mapear tipos do padrão novo para os tipos existentes
+                const typeMapping: { [key: string]: string[] } = {
+                    'DEPOSIT': ['DEPOSITO'],
+                    'WITHDRAW': ['SAQUE'],
+                    'TRANSFER_IN': ['TRANSFERENCIA_RECEBIDA', 'PIX_RECEBIDO'],
+                    'TRANSFER_OUT': ['TRANSFERENCIA_ENVIADA', 'PIX_ENVIADO'],
+                    'PURCHASE': ['COMPRA_DEBITO', 'COMPRA_CREDITO'],
+                    'BILL_PAYMENT': ['PAGAMENTO_FATURA']
+                };
+                
+                if (typeMapping[transactionType]) {
+                    where.tipo = { in: typeMapping[transactionType] };
+                }
+            }
 
             const [movimentacoes, total] = await this.repository.findAndCount({
-                where: { usuarioConta: { id: usuarioId } },
+                where,
                 order: { dataCriacao: "DESC" },
                 skip: offset,
                 take: limite

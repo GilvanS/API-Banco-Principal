@@ -11,7 +11,7 @@ const deviceRepository = AppDataSource.getRepository(Device);
 // PUT /api/settings/password - Alterar senha
 router.put('/password', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -71,7 +71,7 @@ router.put('/password', authMiddleware, async (req, res) => {
 // GET /api/settings/notifications - Consultar configurações de notificação
 router.get('/notifications', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -103,7 +103,7 @@ router.get('/notifications', authMiddleware, async (req, res) => {
 // PUT /api/settings/notifications - Atualizar configurações de notificação
 router.put('/notifications', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -140,7 +140,7 @@ router.put('/notifications', authMiddleware, async (req, res) => {
 // GET /api/settings/devices - Listar dispositivos do usuário
 router.get('/devices', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -180,7 +180,7 @@ router.get('/devices', authMiddleware, async (req, res) => {
 // POST /api/settings/devices/register - Registrar novo dispositivo
 router.post('/devices/register', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -245,7 +245,7 @@ router.post('/devices/register', authMiddleware, async (req, res) => {
 // PUT /api/settings/devices/:deviceId/trust - Marcar dispositivo como confiável
 router.put('/devices/:deviceId/trust', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     const { deviceId } = req.params;
     const { trusted } = req.body;
 
@@ -282,7 +282,7 @@ router.put('/devices/:deviceId/trust', authMiddleware, async (req, res) => {
 // DELETE /api/settings/devices/:deviceId - Remover dispositivo
 router.delete('/devices/:deviceId', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     const { deviceId } = req.params;
 
     if (!userId) {

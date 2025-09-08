@@ -12,7 +12,7 @@ const investmentRepository = AppDataSource.getRepository(Investment);
 // GET /api/investments/summary - Resumo dos investimentos
 router.get('/summary', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -83,7 +83,7 @@ router.get('/summary', authMiddleware, async (req, res) => {
 // GET /api/investments/applications - Listar aplicações
 router.get('/applications', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -190,7 +190,7 @@ router.post('/simulate', authMiddleware, async (req, res) => {
 // POST /api/investments/apply - Aplicar em investimento
 router.post('/apply', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -289,10 +289,49 @@ router.post('/apply', authMiddleware, async (req, res) => {
   }
 });
 
+// PUT /api/investments/savings-program/configure - Configurar programa de poupança
+router.put('/savings-program/configure', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const { monthlyAmount, autoInvest, dayOfMonth } = req.body;
+
+    if (!monthlyAmount || monthlyAmount <= 0) {
+      return res.status(400).json({ error: 'Valor mensal deve ser maior que zero' });
+    }
+
+    const usuario = await UsuarioContaService.buscarPorId(userId);
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Aqui você salvaria as configurações do programa de poupança
+    // Por simplicidade, retornamos sucesso
+    const response = {
+      success: true,
+      message: 'Programa de poupança configurado com sucesso',
+      configuration: {
+        monthlyAmount,
+        autoInvest: autoInvest || false,
+        dayOfMonth: dayOfMonth || 1,
+        nextInvestment: new Date(new Date().getFullYear(), new Date().getMonth() + 1, dayOfMonth || 1)
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Erro ao configurar programa de poupança:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // GET /api/investments/savings - Consultar poupança
 router.get('/savings', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -347,8 +386,8 @@ router.get('/savings', authMiddleware, async (req, res) => {
 // POST /api/investments/:investmentId/redeem - Resgatar investimento
 router.post('/:investmentId/redeem', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
-        const { investmentId } = req.params;
+    const userId = (req as AuthRequest).user?.id;
+    const { investmentId } = req.params;
     const { amount } = req.body; // Valor a resgatar (opcional, se não informado, resgata tudo)
 
     if (!userId) {

@@ -9,7 +9,7 @@ const router = Router();
 // POST /api/transactions/deposit - Realizar depósito
 router.post('/deposit', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -58,7 +58,7 @@ router.post('/deposit', authMiddleware, async (req, res) => {
 // POST /api/transactions/withdraw - Realizar saque
 router.post('/withdraw', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -121,7 +121,7 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
 // POST /api/transactions/transfer - Realizar transferência
 router.post('/transfer', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -209,7 +209,7 @@ router.post('/transfer', authMiddleware, async (req, res) => {
 // POST /api/transactions/pix - Realizar PIX
 router.post('/pix', authMiddleware, async (req, res) => {
   try {
-    const userId = req.usuario?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
