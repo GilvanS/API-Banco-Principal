@@ -608,6 +608,104 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
 
+  /auth/forgot-password:
+    post:
+      tags: ["Autenticação"]
+      summary: "Solicita recuperação de senha por email."
+      description: "Envia um token de recuperação para o email cadastrado. O token é válido por 15 minutos."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "usuario@email.com"
+      responses:
+        '200':
+          description: "Solicitação processada com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem:
+                    type: string
+                    example: "Se o email estiver cadastrado, você receberá instruções para redefinir sua senha"
+                  tokenParaTeste:
+                    type: string
+                    description: "Token para testes (removido em produção)"
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          description: "Email inválido."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: "Erro interno do servidor."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /auth/reset-password:
+    post:
+      tags: ["Autenticação"]
+      summary: "Redefine senha com token de recuperação."
+      description: "Permite redefinir a senha usando o token recebido por email."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, novaSenha]
+              properties:
+                token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                novaSenha:
+                  type: string
+                  format: password
+                  minLength: 8
+                  pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]"
+                  example: "NovaSenhaForte123!"
+                  description: "Nova senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula, 1 número e 1 caractere especial"
+      responses:
+        '200':
+          description: "Senha redefinida com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem:
+                    type: string
+                    example: "Senha redefinida com sucesso. Você já pode fazer login com a nova senha"
+        '400':
+          description: "Token inválido, expirado ou senha não atende aos critérios."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: "Usuário não encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: "Erro interno do servidor."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
   /clientes:
     post:
       tags: ["Clientes"]
