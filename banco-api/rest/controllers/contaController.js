@@ -19,7 +19,29 @@ async function getConta(req, res, next) {
     }
 }
 
+async function depositar(req, res, next) {
+    const { contaId, valor } = req.body;
+    try {
+        const result = await contaService.depositar(contaId, valor);
+        res.status(201).json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function sacar(req, res, next) {
+    const { contaId, valor } = req.body;
+    try {
+        const result = await contaService.sacar(contaId, valor);
+        res.status(201).json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
 module.exports = {
     getContas,
-    getConta
+    getConta,
+    depositar,
+    sacar
 };

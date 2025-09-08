@@ -184,6 +184,58 @@ async function removerTransferencia(id) {
     return { message: 'Transferencia removida com sucesso.' };
 }
 
+async function transferirPorCpf(cpfOrigem, cpfDestino, valor, descricao = '') {
+    // Buscar contas pelos CPFs
+    const contaOrigem = await contasModel.getContaByCpf(cpfOrigem);
+    const contaDestino = await contasModel.getContaByCpf(cpfDestino);
+
+    if (!contaOrigem) {
+        throw createError(404, 'Conta de origem não encontrada para o CPF informado');
+    }
+
+    if (!contaDestino) {
+        throw createError(404, 'Conta de destino não encontrada para o CPF informado');
+    }
+
+    if (!contaOrigem.ativa || !contaDestino.ativa) {
+        throw createError(422, 'Uma das contas está inativa');
+    }
+
+    if (contaOrigem.saldo < valor) {
+        throw createError(422, 'Saldo insuficiente para realizar a transferência');
+    }
+
+    // Realizar a transferência
+    await contasModel.atualizarSaldo(contaOrigem._id, -valor);
+    await contasModel.atualizarSaldo(contaDestino._id, valor);
+
+    // Registrar a transferência
+    const transferencia = {
+        contaOrigem: contaOrigem._id,
+        contaDestino: contaDestino._id,
+        valor: valor,
+        descricao: descricao || `Transferência para ${contaDestino.titular}`,
+        cpfOrigem: cpfOrigem,
+        cpfDestino: cpfDestino,
+        dataTransferencia: new Date()
+    };
+
+    const novaTransferencia = await transferenciasModel.criarTransferencia(transferencia);
+
+    return {
+        message: 'Transferência realizada com sucesso',
+        transferencia: {
+            id: novaTransferencia._id,
+            valor: valor,
+            contaOrigem: contaOrigem.titular,
+            contaDestino: contaDestino.titular,
+            cpfOrigem: cpfOrigem,
+            cpfDestino: cpfDestino,
+            descricao: transferencia.descricao,
+            data: transferencia.dataTransferencia
+        }
+    };
+}
 
 module.exports = {
     realizarTransferencia,
@@ -191,5 +243,6 @@ module.exports = {
     atualizarTransferencia,
     modificarTransferencia,
     removerTransferencia,
-    getTransferencia
+    getTransferencia,
+    transferirPorCpf
 };

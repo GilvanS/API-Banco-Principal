@@ -23,6 +23,10 @@ import cardRoutes from "./routes/cardRoutes";
 import settingsRoutes from "./routes/settingsRoutes";
 import investmentRoutes from "./routes/investmentRoutes";
 
+// Novas rotas de consulta
+import contaRoutes from "./routes/contaRoutes";
+import cartaoLimiteRoutes from "./routes/cartaoLimiteRoutes";
+
 const app = express();
 
 app.use(cors());
@@ -63,6 +67,10 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/cards", cardRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/investments", investmentRoutes);
+
+// Novas rotas de consulta
+app.use("/api/contas", contaRoutes);
+app.use("/api/cartoes", cartaoLimiteRoutes);
 
 const PORT = process.env.PORT || 3000;
 

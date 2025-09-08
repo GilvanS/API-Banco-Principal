@@ -5,6 +5,7 @@ const autenticarToken = require('../middleware/autenticarToken');
 const router = express.Router();
 
 router.post('/', autenticarToken, transferenciaController.realizarTransferencia);
+router.post('/cpf', autenticarToken, transferenciaController.transferirPorCpf);
 router.put('/:id', autenticarToken, transferenciaController.atualizarTransferencia);
 router.patch('/:id', autenticarToken, transferenciaController.modificarTransferencia);
 router.delete('/:id', autenticarToken, transferenciaController.removerTransferencia);

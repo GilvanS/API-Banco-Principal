@@ -7,6 +7,12 @@ const ContaSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  cpf: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
   saldo: {
     type: Number,
     required: true,
@@ -40,9 +46,14 @@ async function atualizarSaldo(id, valor) {
   );
 }
 
+async function getContaByCpf(cpf) {
+  return await Conta.findOne({ cpf: cpf, ativa: true });
+}
+
 module.exports = { 
   Conta,
   getContas,
   getContaById, 
-  atualizarSaldo 
+  atualizarSaldo,
+  getContaByCpf
 };

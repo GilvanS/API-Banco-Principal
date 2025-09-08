@@ -21,6 +21,31 @@ info:
     - CPF: 00000000000
     - Senha: AdminSenhaForte123
     - Role: admin
+    
+    ## 🚀 Integração com Postman
+    
+    Esta API inclui uma **Collection Postman completa** com automação avançada:
+    
+    ### ✅ Autenticação Automática
+    - **Token JWT salvo automaticamente** no environment após login
+    - **Renovação automática** quando o token expira
+    - **Scripts de pre-request** que garantem autenticação transparente
+    - **Variáveis de environment** atualizadas automaticamente
+    
+    ### 📋 Variáveis Automáticas
+    - `authToken`: Token JWT para todas as requisições
+    - `userId`: ID do usuário logado
+    - `userRole`: Role do usuário (admin/cliente)
+    - `tokenExpiry`: Controle de expiração do token
+    - `clienteId`, `cartaoId`: IDs salvos automaticamente após criação
+    
+    ### 🔧 Como Usar
+    1. Importe `API-Banco-Principal.postman_collection.json`
+    2. Importe `API Banco Principal - Environment.postman_environment.json`
+    3. Selecione o environment "API Banco Principal - Environment"
+    4. Execute qualquer requisição - o login será feito automaticamente!
+    
+    **Não é necessário fazer login manual** - tudo é automatizado via scripts!
   version: 2.0.0
   contact:
     name: Equipe de Desenvolvimento
@@ -38,6 +63,27 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: |
+        **Autenticação JWT Automática**
+        
+        O sistema utiliza tokens JWT para autenticação. Com a Collection Postman fornecida:
+        
+        ✅ **Processo Automatizado:**
+        1. Faça login via `/auth/login` - token é salvo automaticamente
+        2. Todas as requisições subsequentes usam o token automaticamente
+        3. Token é renovado automaticamente quando expira
+        
+        ✅ **Variáveis de Environment:**
+        - `authToken`: Token JWT (salvo automaticamente)
+        - `userId`: ID do usuário autenticado
+        - `userRole`: Role do usuário (admin/cliente)
+        
+        ✅ **Headers Automáticos:**
+        ```
+        Authorization: Bearer {{authToken}}
+        ```
+        
+        **Não é necessário configurar headers manualmente** - tudo é automatizado!
   schemas:
     Cartao:
       type: object
@@ -563,6 +609,28 @@ paths:
     post:
       tags: ["Autenticação"]
       summary: "Autentica um usuário e retorna um token JWT."
+      description: |
+        Endpoint de autenticação que valida as credenciais do usuário e retorna um token JWT para acesso aos recursos protegidos da API.
+        
+        ## 🔧 Integração com Postman
+        
+        **Salvamento Automático do Token:**
+        - ✅ O token JWT é **automaticamente salvo** na variável `authToken` do environment
+        - ✅ Dados do usuário são salvos nas variáveis `userId`, `userRole` e `tokenExpiry`
+        - ✅ **Login automático** quando o token expira (via script de pre-request)
+        - ✅ Todas as requisições subsequentes usam automaticamente o token salvo
+        
+        **Variáveis do Environment atualizadas automaticamente:**
+        - `authToken`: Token JWT para autenticação
+        - `userId`: ID do usuário logado
+        - `userRole`: Role do usuário (admin/cliente)
+        - `tokenExpiry`: Data de expiração do token
+        
+        **Scripts Postman incluídos:**
+        - **Pre-request Script**: Verifica validade do token e faz login automático se necessário
+        - **Test Script**: Salva automaticamente o token e dados do usuário no environment
+        
+        Isso garante uma experiência de teste fluida, sem necessidade de copiar/colar tokens manualmente.
       requestBody:
         required: true
         content:
@@ -1459,3 +1527,415 @@ paths:
           description: "Token de autenticação necessário."
         '500':
           description: "Erro interno do servidor."
+
+  # Novos Endpoints - Consultas de Conta e Cartão
+  /api/contas/saldo:
+    get:
+      tags: ["Consultas"]
+      summary: "Consultar saldo da conta corrente"
+      description: "Retorna o saldo atual da conta corrente, limite de crédito e limite diário."
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: "Saldo consultado com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contaCorrente:
+                    type: object
+                    properties:
+                      saldo:
+                        type: number
+                        format: float
+                        example: 1250.00
+                      agencia:
+                        type: string
+                        example: "0001"
+                      numeroConta:
+                        type: string
+                        example: "00123-4"
+                      tipoConta:
+                        type: string
+                        example: "corrente"
+                      moeda:
+                        type: string
+                        example: "BRL"
+                  limiteCredito:
+                    type: object
+                    properties:
+                      limite:
+                        type: number
+                        format: float
+                        example: 5000.00
+                      utilizado:
+                        type: number
+                        format: float
+                        example: 0.00
+                      disponivel:
+                        type: number
+                        format: float
+                        example: 5000.00
+                  limiteDiario:
+                    type: object
+                    properties:
+                      limite:
+                        type: number
+                        format: float
+                        example: 200.00
+                      moeda:
+                        type: string
+                        example: "BRL"
+        '401':
+          description: "Usuário não autenticado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: "Usuário não encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: "Erro interno do servidor."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /api/contas/extrato:
+    get:
+      tags: ["Consultas"]
+      summary: "Consultar extrato da conta corrente"
+      description: "Retorna o extrato da conta corrente com filtros opcionais de data e tipo de transação."
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: dataInicio
+          in: query
+          description: "Data de início do período (formato: YYYY-MM-DD)"
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: dataFim
+          in: query
+          description: "Data de fim do período (formato: YYYY-MM-DD)"
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-01-31"
+        - name: tipoTransacao
+          in: query
+          description: "Tipo de transação para filtrar"
+          required: false
+          schema:
+            type: string
+            enum: [deposito, saque, transferencia_enviada, transferencia_recebida, pix_enviado, pix_recebido, pagamento_cartao]
+            example: "transferencia_enviada"
+      responses:
+        '200':
+          description: "Extrato consultado com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conta:
+                    type: object
+                    properties:
+                      agencia:
+                        type: string
+                        example: "0001"
+                      numeroConta:
+                        type: string
+                        example: "00123-4"
+                      tipoConta:
+                        type: string
+                        example: "corrente"
+                  periodo:
+                    type: object
+                    properties:
+                      dataInicio:
+                        type: string
+                        format: date
+                        nullable: true
+                        example: "2025-01-01"
+                      dataFim:
+                        type: string
+                        format: date
+                        nullable: true
+                        example: "2025-01-31"
+                  transacoes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          example: "e8ffcb17-aa14-4830-8e31-3ca7199391fe"
+                        descricao:
+                          type: string
+                          example: "Transferência recebida de John Doe"
+                        valor:
+                          type: number
+                          format: float
+                          example: 1500.00
+                        data:
+                          type: string
+                          format: date-time
+                          example: "2025-01-15T10:30:00.000Z"
+                        tipo:
+                          type: string
+                          example: "transferencia_recebida"
+                        status:
+                          type: string
+                          example: "CONCLUIDA"
+                  resumo:
+                    type: object
+                    properties:
+                      totalTransacoes:
+                        type: integer
+                        example: 5
+                      saldoAtual:
+                        type: number
+                        format: float
+                        example: 1250.00
+        '401':
+          description: "Usuário não autenticado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: "Usuário não encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: "Erro interno do servidor."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /api/cartoes/limite:
+    get:
+      tags: ["Consultas"]
+      summary: "Consultar limite dos cartões"
+      description: "Retorna informações sobre os limites de todos os cartões do usuário."
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: "Limites consultados com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario:
+                    type: object
+                    properties:
+                      nome:
+                        type: string
+                        example: "Ana Silva"
+                      agencia:
+                        type: string
+                        example: "0001"
+                      conta:
+                        type: string
+                        example: "00123-4"
+                  cartoes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
+                        tipo:
+                          type: string
+                          enum: [CREDITO, DEBITO]
+                          example: "CREDITO"
+                        bandeira:
+                          type: string
+                          example: "visa"
+                        numero:
+                          type: string
+                          example: "**** **** **** 2344"
+                        limite:
+                          type: object
+                          oneOf:
+                            - type: object
+                              description: "Limite para cartão de crédito"
+                              properties:
+                                total:
+                                  type: number
+                                  format: float
+                                  example: 5000.00
+                                disponivel:
+                                  type: number
+                                  format: float
+                                  example: 5000.00
+                                utilizado:
+                                  type: number
+                                  format: float
+                                  example: 0.00
+                                faturaAtual:
+                                  type: number
+                                  format: float
+                                  example: 0.00
+                            - type: object
+                              description: "Limite para cartão de débito"
+                              properties:
+                                diario:
+                                  type: number
+                                  format: float
+                                  example: 200.00
+                                saldoConta:
+                                  type: number
+                                  format: float
+                                  example: 1250.00
+                        status:
+                          type: string
+                          enum: [ativo, bloqueado]
+                          example: "ativo"
+                        dataVencimento:
+                          type: string
+                          format: date
+                          nullable: true
+                          example: "2025-12-31"
+                        moeda:
+                          type: string
+                          example: "BRL"
+        '401':
+          description: "Usuário não autenticado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: "Usuário não encontrado ou nenhum cartão ativo encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: "Erro interno do servidor."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /api/cartoes/limite/{cartaoId}:
+    get:
+      tags: ["Consultas"]
+      summary: "Consultar limite de um cartão específico"
+      description: "Retorna informações detalhadas sobre o limite de um cartão específico."
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: cartaoId
+          in: path
+          description: "ID do cartão"
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
+      responses:
+        '200':
+          description: "Limite do cartão consultado com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
+                  tipo:
+                    type: string
+                    enum: [credito, debito]
+                    example: "credito"
+                  bandeira:
+                    type: string
+                    example: "visa"
+                  numero:
+                    type: string
+                    example: "**** **** **** 2344"
+                  status:
+                    type: string
+                    enum: [ativo, bloqueado]
+                    example: "ativo"
+                  limite:
+                    type: object
+                    oneOf:
+                      - type: object
+                        description: "Limite para cartão de crédito"
+                        properties:
+                          total:
+                            type: number
+                            format: float
+                            example: 5000.00
+                          disponivel:
+                            type: number
+                            format: float
+                            example: 5000.00
+                          utilizado:
+                            type: number
+                            format: float
+                            example: 0.00
+                          faturaAtual:
+                            type: number
+                            format: float
+                            example: 0.00
+                          dataVencimento:
+                            type: string
+                            format: date
+                            nullable: true
+                            example: "2025-12-31"
+                          dataFechamento:
+                            type: string
+                            format: date
+                            nullable: true
+                            example: "2025-12-25"
+                      - type: object
+                        description: "Limite para cartão de débito"
+                        properties:
+                          diario:
+                            type: number
+                            format: float
+                            example: 200.00
+                          saldoConta:
+                            type: number
+                            format: float
+                            example: 1250.00
+                  moeda:
+                    type: string
+                    example: "BRL"
+        '401':
+          description: "Usuário não autenticado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: "Cartão não encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          description: "Erro interno do servidor."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'

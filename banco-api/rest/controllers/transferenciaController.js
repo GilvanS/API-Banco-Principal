@@ -62,7 +62,34 @@ async function removerTransferencia(req, res, next) {
 
     try {
         await transferenciasService.removerTransferencia(id);
-        res.sendStatus(204); 
+        res.sendStatus(204);
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function transferirPorCpf(req, res, next) {
+    const { cpfOrigem, cpfDestino, valor, descricao } = req.body;
+
+    try {
+        if (!cpfOrigem || !cpfDestino || !valor) {
+            return res.status(400).json({ error: 'CPF de origem, CPF de destino e valor são obrigatórios' });
+        }
+
+        if (valor <= 0) {
+            return res.status(400).json({ error: 'Valor deve ser maior que zero' });
+        }
+
+        if (valor > 50000) {
+            return res.status(400).json({ error: 'Valor máximo para transferência é R$ 50.000,00' });
+        }
+
+        if (cpfOrigem === cpfDestino) {
+            return res.status(400).json({ error: 'Não é possível transferir para a mesma conta' });
+        }
+
+        const result = await transferenciasService.transferirPorCpf(cpfOrigem, cpfDestino, valor, descricao);
+        res.status(201).json(result);
     } catch (error) {
         next(error);
     }
@@ -75,4 +102,5 @@ module.exports = {
     atualizarTransferencia,
     modificarTransferencia,
     removerTransferencia,
+    transferirPorCpf
 };
