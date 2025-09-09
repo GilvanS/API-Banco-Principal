@@ -1,0 +1,109 @@
+Prompt Detalhado para a Equipe de Desenvolvimento
+Título: Refatoração e Simplificação da API para Foco em Aquisição (Projeto NuvemBank)
+Objetivo Principal:
+Transformar a API existente, que é completa e complexa, em uma versão enxuta, rápida e focada, cujo principal objetivo é a aquisição de novos clientes e a geração de massa de dados para testes. Devemos remover funcionalidades que não servem a este propósito (como painel de admin e gerenciamento de dispositivos) e otimizar a experiência do desenvolvedor que irá consumi-la.
+Diretrizes Gerais:
+Simplificação Radical: Tudo que não for essencial para o fluxo de criar um cliente -> logar -> movimentar a conta -> consultar dados deve ser removido.
+Foco no Usuário Autenticado: A API deve operar no contexto do usuário logado via token JWT. Endpoints não devem mais receber userId ou clienteId como parâmetro; essa informação deve ser extraída do token de autenticação no backend.
+Padronização e Versionamento: Todas as rotas da API devem ser padronizadas sob o prefixo /api/v1/ para garantir consistência e facilitar futuras versões.
+Clareza nos Modelos (Schemas): Os modelos de dados devem conter apenas os campos necessários para o escopo definido.
+Escopo Detalhado da Refatoração:
+Módulos a Serem Removidos:
+Administração: Remover completamente todas as rotas /admin, a tag Administração, o schema RelatorioResponse e o campo role dos modelos de usuário.
+Dispositivos: Remover o schema Device, a tag Dispositivos e qualquer referência a dispositivos no schema UsuarioConta.
+Autenticação:
+Manter o endpoint POST /api/v1/auth/login.
+Ajustar a validade do token JWT para 30 minutos.
+Remover os endpoints de recuperação de senha (/auth/forgot-password e /auth/reset-password).
+Fluxo de Aquisição e Conta:
+O endpoint principal será POST /api/v1/clientes para criar um novo usuário e sua conta. Simplificar o requestBody para conter apenas o essencial (nomeCompleto, cpf, senha, email).
+Substituir todos os endpoints que usam {id} (como /clientes/{id} e /clientes/{id}/saldo) por endpoints que operam no usuário autenticado:
+GET /api/v1/account/me (para detalhes da conta)
+GET /api/v1/account/balance (para saldo)
+GET /api/v1/account/statement (para extrato)
+Cartões e Transações:
+Refatorar todos os endpoints de cartões (/cards) e transações (/transactions) para não dependerem de usuarioId no corpo ou na URL. A lógica deve sempre usar o ID do usuário presente no token JWT.
+Requisitos Não-Funcionais:
+Testes: Todos os testes existentes devem ser atualizados para refletir as novas rotas e lógicas. Novos testes devem ser criados para validar o fluxo simplificado.
+Qualidade de Código: Aproveitar a refatoração para corrigir os bugs de tipagem e referências já mapeados (ex: req.user vs req.usuario).
+Documentação: O README.md e o arquivo Swagger/OpenAPI devem ser atualizados para refletir 100% a nova estrutura da API.
+Novo Milestone para o GitHub
+Milestone: Refatoração da API para Aquisição (NuvemBank v1.0)
+Task 1: Limpeza e Estruturação do Core
+Issue: Remover Módulo de Administração
+
+Excluir todas as rotas que começam com /admin.
+
+Remover a tag Administração e o schema RelatorioResponse do Swagger.
+
+Remover o campo role do modelo e da tabela UsuarioConta.
+Issue: Remover Módulo de Dispositivos
+
+Excluir o modelo/schema Device.
+
+Remover a propriedade dispositivos do modelo UsuarioConta.
+Issue: Simplificar Autenticação
+
+Ajustar a validade do token JWT para 30 minutos na lógica de login.
+
+Remover os endpoints e a lógica de forgot-password e reset-password.
+Issue: Padronizar Rotas da API
+
+Aplicar o prefixo /api/v1/ a todas as rotas de negócio.
+
+Atualizar o Swagger e as implementações dos controladores.
+Task 2: Refatoração do Módulo de Aquisição e Contas
+Issue: Otimizar Endpoint de Criação de Cliente (POST /api/v1/clientes)
+
+Simplificar o requestBody para exigir apenas nomeCompleto, cpf, senha, email.
+
+Garantir que a lógica de criação de conta e cartão de débito associado continue funcionando.
+Issue: Centralizar Consultas de Conta (Usuário Logado)
+
+Criar o endpoint GET /api/v1/account/me para retornar os dados do usuário do token.
+
+Implementar GET /api/v1/account/balance e GET /api/v1/account/statement.
+
+Remover os antigos endpoints que dependiam de ID na URL (ex: /clientes/{id}, /clientes/{id}/saldo).
+Task 3: Refatoração dos Módulos de Cartões e Transações
+Issue: Adaptar Endpoints de Cartões para Usuário Logado
+
+Modificar GET /api/v1/cards para listar os cartões do usuário autenticado.
+
+Modificar POST /api/v1/cards (solicitação de crédito) para não exigir usuarioId no corpo.
+
+Garantir que o bloqueio, desbloqueio e alteração de PIN funcionem com o cartão pertencente ao usuário do token.
+Issue: Adaptar Endpoints de Transações para Usuário Logado
+
+Refatorar POST /api/v1/transactions/deposit para depositar na conta do usuário autenticado.
+
+Refatorar POST /api/v1/transactions/transfer para usar a conta de origem do usuário autenticado.
+
+Refatorar POST /api/v1/transactions/credit-purchase e pay-bill para operar no contexto do usuário do token.
+Task 4: Correção de Bugs e Dívidas Técnicas
+Issue: Corrigir Inconsistência de Objeto de Usuário (req.user vs req.usuario)
+
+Mapear todas as ocorrências de req.user no código.
+
+Padronizar o uso para req.usuario em todos os middlewares e controladores.
+Issue: Resolver Erros de Tipagem no Código
+
+Corrigir erro TS2322 no TransacaoService.ts (substituir string por enum TipoCartao.DEBITO).
+
+Executar a verificação estática do TypeScript (tsc --noEmit) e corrigir todos os erros de compilação.
+Issue: Validar Métodos e Propriedades
+
+Revisar chamadas de métodos (ex: no TransacaoService) para garantir que eles existem.
+
+Garantir que os objetos de resposta retornem apenas as propriedades definidas nos novos schemas do Swagger.
+Task 5: Qualidade e Finalização
+Issue: Atualizar Cobertura de Testes
+
+Revisar e corrigir os testes unitários e de integração existentes para as novas rotas.
+
+Criar novos testes que validem o fluxo completo: criar cliente -> logar -> transacionar -> consultar extrato.
+Issue: Atualizar Documentação
+
+Gerar o novo arquivo swagger.yaml final, refletindo a API simplificada.
+
+Atualizar o README.md com o novo propósito da API, instruções de uso e o novo escopo de endpoints.
