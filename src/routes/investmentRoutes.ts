@@ -12,7 +12,7 @@ const investmentRepository = AppDataSource.getRepository(Investment);
 // GET /api/investments/summary - Resumo dos investimentos
 router.get('/summary', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -83,7 +83,7 @@ router.get('/summary', authMiddleware, async (req, res) => {
 // GET /api/investments/applications - Listar aplicações
 router.get('/applications', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -190,7 +190,7 @@ router.post('/simulate', authMiddleware, async (req, res) => {
 // POST /api/investments/apply - Aplicar em investimento
 router.post('/apply', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -258,14 +258,10 @@ router.post('/apply', authMiddleware, async (req, res) => {
     await investmentRepository.save(novoInvestimento);
 
     // Registrar movimentação
-    await TransacaoService.registrarMovimentacao({
-      tipo: TipoMovimentacao.INVESTIMENTO,
-      valor: amount,
-      descricao: `Aplicação em ${name}`,
-      agenciaOrigem: usuario.agencia,
-      contaOrigem: usuario.numeroConta,
-      saldoApos: novoSaldo,
-      usuarioContaId: usuario.id
+    await TransacaoService.depositar({
+      agencia: usuario.agencia,
+      conta: usuario.numeroConta,
+      valor: amount
     });
 
     const response = {
@@ -292,7 +288,7 @@ router.post('/apply', authMiddleware, async (req, res) => {
 // PUT /api/investments/savings-program/configure - Configurar programa de poupança
 router.put('/savings-program/configure', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -331,7 +327,7 @@ router.put('/savings-program/configure', authMiddleware, async (req, res) => {
 // GET /api/investments/savings - Consultar poupança
 router.get('/savings', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -386,7 +382,7 @@ router.get('/savings', authMiddleware, async (req, res) => {
 // POST /api/investments/:investmentId/redeem - Resgatar investimento
 router.post('/:investmentId/redeem', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     const { investmentId } = req.params;
     const { amount } = req.body; // Valor a resgatar (opcional, se não informado, resgata tudo)
 
@@ -433,14 +429,10 @@ router.post('/:investmentId/redeem', authMiddleware, async (req, res) => {
     }
 
     // Registrar movimentação
-    await TransacaoService.registrarMovimentacao({
-      tipo: TipoMovimentacao.RESGATE_INVESTIMENTO,
-      valor: valorResgate,
-      descricao: `Resgate de ${investment.nome}`,
-      agenciaOrigem: investment.usuarioConta.agencia,
-      contaOrigem: investment.usuarioConta.numeroConta,
-      saldoApos: novoSaldoConta,
-      usuarioContaId: userId
+    await TransacaoService.depositar({
+      agencia: investment.usuarioConta.agencia,
+      conta: investment.usuarioConta.numeroConta,
+      valor: valorResgate
     });
 
     const response = {

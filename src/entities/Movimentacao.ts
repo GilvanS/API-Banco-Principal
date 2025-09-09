@@ -87,7 +87,7 @@ export class Movimentacao {
         length: 20,
         default: 'CONCLUIDA'
     })
-    status: string;
+    status!: string;
 
     @Column({
         type: 'decimal',

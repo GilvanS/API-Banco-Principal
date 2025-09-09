@@ -9,7 +9,7 @@ const router = Router();
 router.get('/:accountId/balance', authMiddleware, async (req, res) => {
   try {
     const { accountId } = req.params;
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'Não autorizado' });
@@ -38,7 +38,7 @@ router.get('/:accountId/statement', authMiddleware, async (req, res) => {
   try {
     const { accountId } = req.params;
     const { startDate, endDate, transactionType } = req.query;
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     
     if (!userId) {
       return res.status(401).json({ error: 'Não autorizado' });

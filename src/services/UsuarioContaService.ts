@@ -1,6 +1,6 @@
 // src/services/UsuarioContaService.ts
 import { AppDataSource } from "../database/data-source";
-import { UsuarioConta, UserRole, TipoConta } from "../entities/UsuarioConta";
+import { UsuarioConta, TipoConta } from "../entities/UsuarioConta";
 import { Cartao, TipoCartao, BandeiraCartao, TitularidadeCartao } from "../entities/Cartao";
 import { LoggerService } from "./LoggerService";
 import bcrypt from "bcrypt";
@@ -17,7 +17,6 @@ export class UsuarioContaService {
         tipoConta?: TipoConta;
         agencia?: string;
         numeroConta?: string;
-        role?: string;
     }) {
         try {
             // 1. Verificar se CPF já existe
@@ -45,7 +44,6 @@ export class UsuarioContaService {
                 tipoConta: dados.tipoConta || TipoConta.CORRENTE,
                 agencia,
                 numeroConta,
-                role: dados.role === "admin" ? UserRole.ADMIN : UserRole.OPERADOR,
                 saldo: 200.00 // Saldo inicial
             });
 
@@ -158,127 +156,6 @@ export class UsuarioContaService {
             };
         } catch (error) {
             LoggerService.error("Erro ao consultar saldo", error);
-            throw error;
-        }
-    }
-
-    // Métodos de Admin
-    static async atualizarLimites(id: string, limites: {
-        limiteCredito: number;
-        limiteDebitoDiario?: number;
-    }) {
-        try {
-            const cliente = await this.repository.findOne({
-                where: { id }
-            });
-
-            if (!cliente) {
-                throw new Error("Cliente não encontrado");
-            }
-
-            cliente.limiteCredito = limites.limiteCredito;
-            if (limites.limiteDebitoDiario !== undefined) {
-                cliente.limiteDebitoDiario = limites.limiteDebitoDiario;
-            }
-
-            await this.repository.save(cliente);
-
-            LoggerService.info("Limites atualizados por admin", {
-                clienteId: id,
-                limites
-            });
-
-            return cliente;
-        } catch (error) {
-            LoggerService.error("Erro ao atualizar limites", error);
-            throw error;
-        }
-    }
-
-    static async bloquearConta(id: string, contaBloqueada: boolean) {
-        try {
-            const cliente = await this.repository.findOne({
-                where: { id }
-            });
-
-            if (!cliente) {
-                throw new Error("Cliente não encontrado");
-            }
-
-            cliente.contaBloqueada = contaBloqueada;
-            await this.repository.save(cliente);
-
-            LoggerService.info("Status de conta alterado por admin", {
-                clienteId: id,
-                contaBloqueada
-            });
-
-            return cliente;
-        } catch (error) {
-            LoggerService.error("Erro ao alterar status da conta", error);
-            throw error;
-        }
-    }
-
-    static async desativarConta(id: string) {
-        try {
-            const cliente = await this.repository.findOne({
-                where: { id }
-            });
-
-            if (!cliente) {
-                throw new Error("Cliente não encontrado");
-            }
-
-            cliente.ativo = false;
-            cliente.contaBloqueada = true;
-            await this.repository.save(cliente);
-
-            LoggerService.info("Conta desativada por admin", {
-                clienteId: id
-            });
-
-            return cliente;
-        } catch (error) {
-            LoggerService.error("Erro ao desativar conta", error);
-            throw error;
-        }
-    }
-
-    static async gerarRelatorio() {
-        try {
-            const clientes = await this.repository.find({
-                relations: ["cartoes"]
-            });
-
-            const totalClientes = clientes.length;
-            const clientesAtivos = clientes.filter(c => c.ativo).length;
-            const clientesBloqueados = clientes.filter(c => c.contaBloqueada).length;
-            const totalSaldo = clientes.reduce((sum, c) => sum + c.saldo, 0);
-            const totalCartoes = clientes.reduce((sum, c) => sum + c.cartoes.length, 0);
-
-            const relatorio = {
-                resumo: {
-                    totalClientes,
-                    clientesAtivos,
-                    clientesBloqueados,
-                    totalSaldo,
-                    totalCartoes
-                },
-                clientes: clientes.map(c => ({
-                    id: c.id,
-                    nomeCompleto: c.nomeCompleto,
-                    cpf: c.cpf,
-                    saldo: c.saldo,
-                    ativo: c.ativo,
-                    contaBloqueada: c.contaBloqueada,
-                    totalCartoes: c.cartoes.length
-                }))
-            };
-
-            return relatorio;
-        } catch (error) {
-            LoggerService.error("Erro ao gerar relatório", error);
             throw error;
         }
     }

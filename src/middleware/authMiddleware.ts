@@ -9,7 +9,6 @@ export interface AuthRequest extends Request {
     usuario?: {
         id: string;
         cpf: string;
-        role: string;
     };
 }
 
@@ -41,8 +40,7 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
 
             req.usuario = decoded;
             LoggerService.info("Token validado com sucesso", { 
-                cpf: decoded.cpf, 
-                role: decoded.role 
+                cpf: decoded.cpf
             });
             next();
         });

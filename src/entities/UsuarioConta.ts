@@ -3,12 +3,6 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { Cartao } from "./Cartao";
 import { Movimentacao } from "./Movimentacao";
 import { Investment } from "./Investment";
-import { Device } from "./Device";
-
-export enum UserRole {
-    ADMIN = "admin",
-    OPERADOR = "operador"
-}
 
 export enum TipoConta {
     POUPANCA = "poupanca",
@@ -36,13 +30,6 @@ export class UsuarioConta {
     @Column({ select: false })
     senha!: string;
 
-    @Column({
-        type: "varchar",
-        length: 20,
-        default: UserRole.OPERADOR
-    })
-    role!: UserRole;
-
     @Column("decimal", { precision: 10, scale: 2, default: 1000 })
     limiteCredito!: number;
 
@@ -69,9 +56,6 @@ export class UsuarioConta {
 
     @OneToMany(() => Investment, investment => investment.usuarioConta)
     investments!: Investment[];
-
-    @OneToMany(() => Device, device => device.usuarioConta)
-    devices!: Device[];
 
     @Column({
         type: 'varchar',

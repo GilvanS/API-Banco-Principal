@@ -10,7 +10,7 @@ const router = Router();
 // GET /api/contas/saldo - Consultar saldo da conta corrente
 router.get('/saldo', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -49,7 +49,7 @@ router.get('/saldo', authMiddleware, async (req, res) => {
 // GET /api/contas/extrato - Consultar extrato da conta corrente
 router.get('/extrato', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     const { dataInicio, dataFim, tipoTransacao } = req.query;
     
     if (!userId) {

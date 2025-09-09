@@ -9,7 +9,7 @@ const router = Router();
 // GET /api/cartoes/limite - Consultar limite do cartão
 router.get('/limite', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -89,7 +89,7 @@ router.get('/limite', authMiddleware, async (req, res) => {
 // GET /api/cartoes/limite/:cartaoId - Consultar limite de um cartão específico
 router.get('/limite/:cartaoId', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     const { cartaoId } = req.params;
     
     if (!userId) {

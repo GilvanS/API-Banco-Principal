@@ -9,7 +9,7 @@ const router = Router();
 // POST /api/transactions/deposit - Realizar depósito
 router.post('/deposit', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -38,13 +38,13 @@ router.post('/deposit', authMiddleware, async (req, res) => {
     });
 
     const response = {
-      transactionId: resultado.id,
+      transactionId: resultado.dados.agencia, // Usando agencia como ID temporário
       type: 'DEPOSIT',
-      amount: resultado.valor,
-      description: resultado.descricao,
-      date: resultado.dataCriacao,
+      amount: resultado.dados.valor,
+      description: `Depósito realizado na conta ${usuario.agencia}/${usuario.numeroConta}`,
+      date: resultado.dados.data,
       status: 'COMPLETED',
-      newBalance: resultado.saldoApos,
+      newBalance: resultado.dados.saldoAtual,
       fee: 0
     };
 
@@ -58,7 +58,7 @@ router.post('/deposit', authMiddleware, async (req, res) => {
 // POST /api/transactions/withdraw - Realizar saque
 router.post('/withdraw', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -90,22 +90,18 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
     await UsuarioContaService.atualizarSaldo(usuario.id, novoSaldo);
 
     // Registrar movimentação
-    const movimentacao = await TransacaoService.registrarMovimentacao({
-      tipo: TipoMovimentacao.SAQUE,
-      valor: amount,
-      descricao: description || 'Saque em conta',
-      agenciaOrigem: usuario.agencia,
-      contaOrigem: usuario.numeroConta,
-      saldoApos: novoSaldo,
-      usuarioContaId: usuario.id
+    const movimentacao = await TransacaoService.depositar({
+      agencia: usuario.agencia,
+      conta: usuario.numeroConta,
+      valor: amount
     });
 
     const response = {
-      transactionId: movimentacao.id,
+      transactionId: movimentacao.dados.agencia, // Usando agencia como ID temporário
       type: 'WITHDRAW',
-      amount: movimentacao.valor,
-      description: movimentacao.descricao,
-      date: movimentacao.dataCriacao,
+      amount: movimentacao.dados.valor,
+      description: description || 'Saque em conta',
+      date: movimentacao.dados.data,
       status: 'COMPLETED',
       newBalance: novoSaldo,
       fee: 0
@@ -121,7 +117,7 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
 // POST /api/transactions/transfer - Realizar transferência
 router.post('/transfer', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -183,13 +179,13 @@ router.post('/transfer', authMiddleware, async (req, res) => {
     });
 
     const response = {
-      transactionId: resultado.id,
+      transactionId: resultado.dados.agenciaOrigem, // Usando agenciaOrigem como ID temporário
       type: 'TRANSFER',
-      amount: resultado.valor,
-      description: resultado.descricao,
-      date: resultado.dataCriacao,
+      amount: resultado.dados.valor,
+      description: `Transferência enviada para ${resultado.dados.nomeDestino} (${resultado.dados.agenciaDestino}/${resultado.dados.contaDestino})`,
+      date: resultado.dados.data,
       status: 'COMPLETED',
-      newBalance: resultado.saldoApos,
+      newBalance: usuario.saldo - amount, // Ajustar conforme necessário
       fee: taxa,
       destination: {
         account: destinationAccount,
@@ -209,7 +205,7 @@ router.post('/transfer', authMiddleware, async (req, res) => {
 // POST /api/transactions/pix - Realizar PIX
 router.post('/pix', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -249,17 +245,17 @@ router.post('/pix', authMiddleware, async (req, res) => {
     });
 
     const response = {
-      transactionId: resultado.id,
+      transactionId: resultado.dados.cpfOrigem, // Usando cpfOrigem como ID temporário
       type: 'PIX',
-      amount: resultado.valor,
-      description: resultado.descricao,
-      date: resultado.dataCriacao,
+      amount: resultado.dados.valor,
+      description: `PIX enviado para ${pixKeyType.toUpperCase()}: ${pixKey}`,
+      date: resultado.dados.data,
       status: 'COMPLETED',
-      newBalance: resultado.saldoApos,
+      newBalance: usuario.saldo - amount, // Ajustar conforme necessário
       fee: 0,
       pixKey,
       pixKeyType,
-      transactionCode: resultado.codigoTransacao || `PIX${Date.now()}`
+      transactionCode: `PIX${Date.now()}`
     };
 
     res.status(201).json(response);

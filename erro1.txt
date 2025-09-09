@@ -1,0 +1,38 @@
+ Edit src\services\CartaoService.ts:     static async desbloquearCa... =>     static async desbloquearCa...                        │
+ │                                                                                                                                      │
+ │    425                                                                                                                               │
+ │    426   cartao.status = StatusCartao.ATIVO;                                                                                         │
+ │    427   cartao.ativo = true;                                                                                                        │
+ │    428 - cartao.motivoBloqueio = null;                                                                                               │
+ │    428 + cartao.motivoBloqueio = undefined;                                                                                          │
+ │    429                                                                                                                               │
+ │    430   await this.repository.save(cartao);                                                                                         │
+ │    431                                                                                                                               │
+ │ ✔  Shell npm test (Run the Jest test suite.)                                                                                         │
+ │                                                                                                                                      │
+ │                                                                                                                                      │
+ │    > api-banco-principal@2.0.0 test                                                                                                  │
+ │    > jest                                                                                                                            │
+ │                                                                                                                                      │
+ │                                                                                                                                      │
+ │    FAIL tests/auth.test.ts                                                                                                           │
+ │      ● Test suite failed to run                                                                                                      │
+ │                                                                                                                                      │
+ │        src/services/TransacaoService.ts:284:17 - error TS2322: Type '{ numero: string; tipo: "debito"; }' is not assignable to type  │
+ │    'FindOptionsWhere<Cartao> | FindOptionsWhere<Cartao>[] | undefined'.                                                              │
+ │          Types of property 'tipo' are incompatible.                                                                                  │
+ │            Type '"debito"' is not assignable to type 'TipoCartao | FindOperator<TipoCartao> | undefined'.                            │
+ │                                                                                                                                      │
+ │        284                 where: {                                                                                                  │
+ │                            ~~~~~                                                                                                     │                     
+ │                                                                                                                                      │                     
+ │          node_modules/typeorm/find-options/FindOneOptions.d.ts:23:5                                                                  │                     
+ │            23     where?: FindOptionsWhere<Entity>[] | FindOptionsWhere<Entity>;                                                     │                     
+ │                   ~~~~~                                                                                                              │                     
+ │            The expected type comes from property 'where' which is declared here on type 'FindOneOptions<Cartao>'                     │                     
+ │                                                                                                                                      │                     
+ │    Test Suites: 1 failed, 1 total                                                                                                    │                     
+ │    Tests:       0 total                                                                                                              │                     
+ │    Snapshots:   0 total                                                                                                              │                     
+ │    Time:        10.575 s                                                                                                             │                     
+ │    Ran all test suites.

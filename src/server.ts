@@ -7,23 +7,16 @@ import YAML from "yamljs";
 import path from "path";
 import { AppDataSource } from "./database/data-source";
 import { LoggerService } from "./services/LoggerService";
-import { UsuarioContaService } from "./services/UsuarioContaService";
 
 // Importar rotas
 import authRoutes from "./routes/authRoutes";
 import clienteRoutes from "./routes/clienteRoutes";
 import cartaoRoutes from "./routes/cartaoRoutes";
 import transacaoRoutes from "./routes/transacaoRoutes";
-import adminRoutes from "./routes/adminRoutes";
-
-// Novas rotas da refatoração
 import accountRoutes from "./routes/accountRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import cardRoutes from "./routes/cardRoutes";
-import settingsRoutes from "./routes/settingsRoutes";
 import investmentRoutes from "./routes/investmentRoutes";
-
-// Novas rotas de consulta
 import contaRoutes from "./routes/contaRoutes";
 import cartaoLimiteRoutes from "./routes/cartaoLimiteRoutes";
 
@@ -54,55 +47,50 @@ app.get("/health", (req, res) => {
     });
 });
 
-// Rotas da API - Legadas
-app.use("/auth", authRoutes);
-app.use("/clientes", clienteRoutes);
-app.use("/cartoes", cartaoRoutes);
-app.use("/transacoes", transacaoRoutes);
-app.use("/admin", adminRoutes);
+// Rotas da API v1
+const apiV1Router = express.Router();
 
-// Novas rotas da API - Refatoração
-app.use("/api/account", accountRoutes);
-app.use("/api/transactions", transactionRoutes);
-app.use("/api/cards", cardRoutes);
-app.use("/api/settings", settingsRoutes);
-app.use("/api/investments", investmentRoutes);
+// Rotas legadas movidas para /api/v1
+apiV1Router.use("/auth", authRoutes);
+apiV1Router.use("/clientes", clienteRoutes);
+apiV1Router.use("/cartoes", cartaoRoutes);
+apiV1Router.use("/transacoes", transacaoRoutes);
 
-// Novas rotas de consulta
-app.use("/api/contas", contaRoutes);
-app.use("/api/cartoes", cartaoLimiteRoutes);
+// Rotas da refatoração movidas para /api/v1
+apiV1Router.use("/account", accountRoutes);
+apiV1Router.use("/transactions", transactionRoutes);
+apiV1Router.use("/cards", cardRoutes);
+apiV1Router.use("/investments", investmentRoutes);
+
+// Rotas de consulta movidas para /api/v1
+apiV1Router.use("/contas", contaRoutes);
+apiV1Router.use("/cartoes", cartaoLimiteRoutes);
+
+app.use("/api/v1", apiV1Router);
 
 const PORT = process.env.PORT || 3000;
 
-AppDataSource.initialize()
-    .then(async () => {
+const startServer = async () => {
+    try {
+        await AppDataSource.initialize();
         LoggerService.info("Banco de dados inicializado com sucesso");
 
-        // Criar admin automaticamente se não existir
-        try {
-            const adminExistente = await UsuarioContaService.buscarPorCPF("00000000000");
-            if (!adminExistente) {
-                await UsuarioContaService.criarCliente({
-                    nomeCompleto: "Administrador do Sistema",
-                    cpf: "00000000000",
-                    senha: "AdminSenhaForte123",
-                    role: "admin"
-                });
-                LoggerService.info("Admin criado automaticamente");
-            } else {
-                LoggerService.info("Admin já existe");
-            }
-        } catch (error) {
-            LoggerService.error("Erro ao criar admin automático", error);
+        if (process.env.NODE_ENV !== 'test') {
+            app.listen(PORT, () => {
+                LoggerService.info(`Servidor iniciado na porta ${PORT}`);
+                LoggerService.info(`Documentação: http://localhost:${PORT}/api-docs`);
+                LoggerService.info(`Health Check: http://localhost:${PORT}/health`);
+            });
         }
-
-        app.listen(PORT, () => {
-            LoggerService.info(`Servidor iniciado na porta ${PORT}`);
-            LoggerService.info(`Documentação: http://localhost:${PORT}/api-docs`);
-            LoggerService.info(`Health Check: http://localhost:${PORT}/health`);
-        });
-    })
-    .catch((error) => {
+    } catch (error) {
         LoggerService.error("Erro ao inicializar servidor", error);
         process.exit(1);
-    });
+    }
+};
+
+// Iniciar o servidor apenas se não estiver em ambiente de teste
+if (process.env.NODE_ENV !== 'test') {
+    startServer();
+}
+
+export { app, startServer };

@@ -188,36 +188,6 @@ export class CartaoService {
         }
     }
 
-    // Método de Admin
-    static async atualizarLimite(cartaoId: string, limite: number) {
-        try {
-            const cartao = await this.repository.findOne({
-                where: { id: cartaoId }
-            });
-
-            if (!cartao) {
-                throw new Error("Cartão não encontrado");
-            }
-
-            if (cartao.tipo !== TipoCartao.CREDITO) {
-                throw new Error("Apenas cartões de crédito podem ter limite alterado");
-            }
-
-            cartao.limite = limite;
-            await this.repository.save(cartao);
-
-            LoggerService.info("Limite do cartão atualizado por admin", {
-                cartaoId,
-                limite
-            });
-
-            return cartao;
-        } catch (error) {
-            LoggerService.error("Erro ao atualizar limite do cartão", error);
-            throw error;
-        }
-    }
-
     private static gerarNumeroCartao(): string {
         return "4" + Math.random().toString().slice(2, 16);
     }
@@ -455,7 +425,7 @@ export class CartaoService {
 
             cartao.status = StatusCartao.ATIVO;
             cartao.ativo = true;
-            cartao.motivoBloqueio = null;
+            cartao.motivoBloqueio = undefined;
 
             await this.repository.save(cartao);
 

@@ -10,7 +10,7 @@ const router = Router();
 // GET /api/cards - Listar cartões do usuário
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -55,7 +55,7 @@ router.get('/', authMiddleware, async (req, res) => {
 // POST /api/cards/request - Solicitar novo cartão
 router.post('/request', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
@@ -108,7 +108,7 @@ router.post('/request', authMiddleware, async (req, res) => {
 // PUT /api/cards/:cardId/block - Bloquear cartão
 router.put('/:cardId/block', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     const { cardId } = req.params;
     const { reason } = req.body;
 
@@ -134,7 +134,7 @@ router.put('/:cardId/block', authMiddleware, async (req, res) => {
     }
 
     // Bloquear cartão
-    await CartaoService.bloquearCartao(cardId, reason || 'Bloqueio solicitado pelo usuário');
+    await CartaoService.bloquearCartao(cardId);
 
     const response = {
       cardId,
@@ -154,7 +154,7 @@ router.put('/:cardId/block', authMiddleware, async (req, res) => {
 // PUT /api/cards/:cardId/unblock - Desbloquear cartão
 router.put('/:cardId/unblock', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     const { cardId } = req.params;
 
     if (!userId) {
@@ -198,7 +198,7 @@ router.put('/:cardId/unblock', authMiddleware, async (req, res) => {
 // GET /api/cards/:cardId/invoice - Consultar fatura do cartão
 router.get('/:cardId/invoice', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     const { cardId } = req.params;
     const { month, year } = req.query;
 
@@ -228,7 +228,7 @@ router.get('/:cardId/invoice', authMiddleware, async (req, res) => {
     const dataFim = new Date(dataInicio.getFullYear(), dataInicio.getMonth() + 1, 0);
 
     // Simular busca de transações da fatura (implementar conforme necessário)
-    const transacoes = [];
+    const transacoes: any[] = [];
 
     const response = {
       cardId,
@@ -260,7 +260,7 @@ router.get('/:cardId/invoice', authMiddleware, async (req, res) => {
 // PUT /api/cards/:cardId/settings - Atualizar configurações do cartão
 router.put('/:cardId/settings', authMiddleware, async (req, res) => {
   try {
-    const userId = (req as AuthRequest).user?.id;
+    const userId = (req as AuthRequest).usuario?.id;
     const { cardId } = req.params;
     const { onlinePurchases, internationalPurchases, withdrawals, limit } = req.body;
 

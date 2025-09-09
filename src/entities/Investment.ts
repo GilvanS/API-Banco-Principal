@@ -21,64 +21,64 @@ export enum StatusInvestimento {
 @Entity('investments')
 export class Investment {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({
     type: 'varchar',
     length: 50
   })
-  tipo: TipoInvestimento;
+  tipo!: TipoInvestimento;
 
   @Column({
     type: 'varchar',
     length: 100
   })
-  nome: string;
+  nome!: string;
 
   @Column({
     type: 'decimal',
     precision: 15,
     scale: 2
   })
-  valorInvestido: number;
+  valorInvestido!: number;
 
   @Column({
     type: 'decimal',
     precision: 15,
     scale: 2
   })
-  valorAtual: number;
+  valorAtual!: number;
 
   @Column({
     type: 'decimal',
     precision: 5,
     scale: 2
   })
-  rentabilidade: number;
+  rentabilidade!: number;
 
   @Column({
     type: 'decimal',
     precision: 5,
     scale: 2
   })
-  taxaRendimento: number;
+  taxaRendimento!: number;
 
   @Column({
     type: 'date'
   })
-  dataVencimento: Date;
+  dataVencimento!: Date;
 
   @Column({
     type: 'varchar',
     length: 20
   })
-  status: StatusInvestimento;
+  status!: StatusInvestimento;
 
   @Column({
     type: 'boolean',
     default: true
   })
-  permiteResgate: boolean;
+  permiteResgate!: boolean;
 
   @Column({
     type: 'decimal',
@@ -95,11 +95,11 @@ export class Investment {
   descricao?: string;
 
   @ManyToOne(() => UsuarioConta, usuarioConta => usuarioConta.investments)
-  usuarioConta: UsuarioConta;
+  usuarioConta!: UsuarioConta;
 
   @CreateDateColumn()
-  dataCriacao: Date;
+  dataCriacao!: Date;
 
   @UpdateDateColumn()
-  dataAtualizacao: Date;
+  dataAtualizacao!: Date;
 }

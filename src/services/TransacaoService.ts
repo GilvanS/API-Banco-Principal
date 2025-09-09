@@ -283,7 +283,7 @@ export class TransacaoService {
             const cartao = await this.cartaoRepository.findOne({
                 where: { 
                     numero: dados.numeroCartao,
-                    tipo: "debito"
+                    tipo: TipoCartao.DEBITO
                 },
                 relations: ["usuarioConta"]
             });
