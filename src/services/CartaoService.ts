@@ -41,10 +41,11 @@ export class CartaoService {
                 tipo: TipoCartao.CREDITO,
                 bandeira: dados.bandeira,
                 titularidade: TitularidadeCartao.ADICIONAL,
-                numero: this.gerarNumeroCartao(),
+                numero: this.gerarNumeroCartao(dados.bandeira),
                 cvv: this.gerarCVV(),
                 dataValidade: this.gerarDataValidade(),
-                limite: dados.limite || 500.00 // Limite menor para cartão adicional
+                limite: dados.limite || 500.00, // Limite menor para cartão adicional
+                pin: null // Cartões de crédito não têm PIN
             });
 
             await this.repository.save(cartao);
@@ -188,8 +189,22 @@ export class CartaoService {
         }
     }
 
-    private static gerarNumeroCartao(): string {
-        return "4" + Math.random().toString().slice(2, 16);
+    private static gerarNumeroCartao(bandeira?: BandeiraCartao): string {
+        let prefixo = "4"; // Padrão Visa
+        
+        if (bandeira === BandeiraCartao.MASTERCARD) {
+            prefixo = "5";
+        } else if (bandeira === BandeiraCartao.VISA) {
+            prefixo = "4";
+        }
+        
+        // Gerar 15 dígitos restantes para completar 16 dígitos
+        let numero = prefixo;
+        for (let i = 0; i < 15; i++) {
+            numero += Math.floor(Math.random() * 10);
+        }
+        
+        return numero;
     }
 
     private static gerarCVV(): string {
@@ -254,7 +269,7 @@ export class CartaoService {
                 tipo: dados.tipo,
                 bandeira: dados.bandeira,
                 titularidade: TitularidadeCartao.TITULAR,
-                numero: this.gerarNumeroCartao(),
+                numero: this.gerarNumeroCartao(dados.bandeira),
                 cvv: this.gerarCVV(),
                 dataValidade: this.gerarDataValidade(),
                 limite: dados.tipo === TipoCartao.CREDITO ? 1000.00 : 0,
@@ -265,7 +280,8 @@ export class CartaoService {
                 isVirtual: dados.isVirtual || false,
                 permiteCompraOnline: true,
                 permiteCompraExterior: false,
-                permiteSaque: dados.tipo === TipoCartao.DEBITO
+                permiteSaque: dados.tipo === TipoCartao.DEBITO,
+                pin: dados.tipo === TipoCartao.DEBITO ? await bcrypt.hash("1234", 10) : null // PIN padrão para débito
             });
 
             // Definir datas de fatura para cartão de crédito

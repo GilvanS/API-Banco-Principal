@@ -1,26 +1,14 @@
 openapi: 3.0.0
 info:
-  title: API Banco Principal
+  title: API NuvemBank
   description: |
-    API bancária completa desenvolvida em TypeScript com SQLite, oferecendo funcionalidades de gestão de clientes, cartões e transações financeiras com controle de acesso baseado em roles (admin/operador).
+    API enxuta e focada na aquisição de novos clientes e geração de massa de dados para o projeto NuvemBank.
     
-    ## Status Atual - ✅ FUNCIONANDO
-    - ✅ Servidor: Rodando na porta 3000
-    - ✅ Banco de Dados: SQLite conectado e sincronizado
-    - ✅ Autenticação: JWT funcionando
-    - ✅ Documentação: Swagger acessível em /api-docs
-    - ✅ Health Check: Funcionando em /health
-    - ✅ Admin Padrão: Criado automaticamente
-    
-    ## Correções Realizadas
-    - ✅ Erro de Tipo ENUM no SQLite corrigido
-    - ✅ Melhoria no Campo Tipo de Movimentação
-    - ✅ Servidor funcionando perfeitamente
-    
-    ## Usuário Admin Padrão
-    - CPF: 00000000000
-    - Senha: AdminSenhaForte123
-    - Role: admin
+    ## Foco
+    - Criação de cliente
+    - Login
+    - Movimentação de conta
+    - Consulta de dados
     
     ## 🚀 Integração com Postman
     
@@ -35,7 +23,6 @@ info:
     ### 📋 Variáveis Automáticas
     - `authToken`: Token JWT para todas as requisições
     - `userId`: ID do usuário logado
-    - `userRole`: Role do usuário (admin/cliente)
     - `tokenExpiry`: Controle de expiração do token
     - `clienteId`, `cartaoId`: IDs salvos automaticamente após criação
     
@@ -46,15 +33,15 @@ info:
     4. Execute qualquer requisição - o login será feito automaticamente!
     
     **Não é necessário fazer login manual** - tudo é automatizado via scripts!
-  version: 2.0.0
+  version: 1.0.0
   contact:
-    name: Equipe de Desenvolvimento
-    email: suporte@banco.com
+    name: Equipe NuvemBank
+    email: suporte@nuvembank.com
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
 servers:
-  - url: http://localhost:3000
+  - url: http://localhost:3000/api/v1
     description: Servidor de Desenvolvimento
 
 components:
@@ -76,7 +63,6 @@ components:
         ✅ **Variáveis de Environment:**
         - `authToken`: Token JWT (salvo automaticamente)
         - `userId`: ID do usuário autenticado
-        - `userRole`: Role do usuário (admin/cliente)
         
         ✅ **Headers Automáticos:**
         ```
@@ -151,10 +137,6 @@ components:
         numeroConta:
           type: string
           example: "37688147"
-        role:
-          type: string
-          enum: [admin, operador]
-          example: "admin"
         limiteCredito:
           type: number
           format: float
@@ -220,10 +202,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Investment'
-        dispositivos:
-          type: array
-          items:
-            $ref: '#/components/schemas/Device'
     Investment:
       type: object
       properties:
@@ -276,49 +254,6 @@ components:
           example: 1050.25
         usuarioConta:
           $ref: '#/components/schemas/UsuarioConta'
-    Device:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-        nome:
-          type: string
-          example: "iPhone 13 Pro"
-        tipo:
-          type: string
-          enum: [mobile, desktop, tablet]
-          example: "mobile"
-        sistemaOperacional:
-          type: string
-          example: "iOS 15.6"
-        navegador:
-          type: string
-          example: "Safari 15.6"
-        enderecoIp:
-          type: string
-          example: "192.168.1.100"
-        localizacao:
-          type: string
-          example: "São Paulo, SP"
-        status:
-          type: string
-          enum: [ativo, bloqueado, removido]
-          example: "ativo"
-        ultimoAcesso:
-          type: string
-          format: date-time
-          example: "2025-01-15T14:30:00.000Z"
-        dataCadastro:
-          type: string
-          format: date-time
-          example: "2025-01-10T09:15:00.000Z"
-        confiavel:
-          type: boolean
-          example: true
-        usuarioConta:
-          $ref: '#/components/schemas/UsuarioConta'
     SaldoResponse:
       type: object
       properties:
@@ -365,7 +300,7 @@ components:
         status:
           type: string
           enum: [pendente, concluida, cancelada, falhada]
-          example: "concluida"
+          example: "conclida"
         taxa:
           type: number
           format: float
@@ -472,49 +407,6 @@ components:
               type: string
               format: date-time
               example: "2025-08-02T17:41:17.000Z"
-    RelatorioResponse:
-      type: object
-      properties:
-        resumo:
-          type: object
-          properties:
-            totalClientes:
-              type: integer
-              example: 7
-            clientesAtivos:
-              type: integer
-              example: 6
-            clientesBloqueados:
-              type: integer
-              example: 1
-            totalSaldo:
-              type: number
-              format: float
-              example: 1500.00
-            totalCartoes:
-              type: integer
-              example: 14
-        clientes:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-                format: uuid
-              nomeCompleto:
-                type: string
-              cpf:
-                type: string
-              saldo:
-                type: number
-                format: float
-              ativo:
-                type: boolean
-              contaBloqueada:
-                type: boolean
-              totalCartoes:
-                type: integer
     ApiError:
       type: object
       properties:
@@ -547,7 +439,7 @@ components:
       properties:
         message:
           type: string
-          example: "API Banco Principal v2.0.0"
+          example: "API NuvemBank v1.0.0"
         status:
           type: string
           example: "online"
@@ -567,16 +459,12 @@ tags:
     description: "Operações financeiras e transações."
   - name: "Consultas"
     description: "Consultas e relatórios do sistema."
-  - name: "Administração"
-    description: "Operações exclusivas para administradores."
   - name: "Contas"
     description: "Operações de gestão de contas bancárias."
   - name: "Configurações"
-    description: "Configurações de usuário e dispositivos."
+    description: "Configurações de usuário."
   - name: "Investimentos"
     description: "Operações de investimentos e poupança."
-  - name: "Dispositivos"
-    description: "Gestão de dispositivos autorizados."
 
 paths:
   /:
@@ -616,14 +504,13 @@ paths:
         
         **Salvamento Automático do Token:**
         - ✅ O token JWT é **automaticamente salvo** na variável `authToken` do environment
-        - ✅ Dados do usuário são salvos nas variáveis `userId`, `userRole` e `tokenExpiry`
+        - ✅ Dados do usuário são salvos nas variáveis `userId` e `tokenExpiry`
         - ✅ **Login automático** quando o token expira (via script de pre-request)
         - ✅ Todas as requisições subsequentes usam automaticamente o token salvo
         
         **Variáveis do Environment atualizadas automaticamente:**
         - `authToken`: Token JWT para autenticação
         - `userId`: ID do usuário logado
-        - `userRole`: Role do usuário (admin/cliente)
         - `tokenExpiry`: Data de expiração do token
         
         **Scripts Postman incluídos:**
@@ -667,108 +554,8 @@ paths:
                         type: string
                       cpf:
                         type: string
-                      role:
-                        type: string
         '401':
           description: "CPF ou senha inválidos."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /auth/forgot-password:
-    post:
-      tags: ["Autenticação"]
-      summary: "Solicita recuperação de senha por email."
-      description: "Envia um token de recuperação para o email cadastrado. O token é válido por 15 minutos."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email]
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: "usuario@email.com"
-      responses:
-        '200':
-          description: "Solicitação processada com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  mensagem:
-                    type: string
-                    example: "Se o email estiver cadastrado, você receberá instruções para redefinir sua senha"
-                  tokenParaTeste:
-                    type: string
-                    description: "Token para testes (removido em produção)"
-                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        '400':
-          description: "Email inválido."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '500':
-          description: "Erro interno do servidor."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /auth/reset-password:
-    post:
-      tags: ["Autenticação"]
-      summary: "Redefine senha com token de recuperação."
-      description: "Permite redefinir a senha usando o token recebido por email."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [token, novaSenha]
-              properties:
-                token:
-                  type: string
-                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                novaSenha:
-                  type: string
-                  format: password
-                  minLength: 8
-                  pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]"
-                  example: "NovaSenhaForte123!"
-                  description: "Nova senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula, 1 número e 1 caractere especial"
-      responses:
-        '200':
-          description: "Senha redefinida com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  mensagem:
-                    type: string
-                    example: "Senha redefinida com sucesso. Você já pode fazer login com a nova senha"
-        '400':
-          description: "Token inválido, expirado ou senha não atende aos critérios."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '404':
-          description: "Usuário não encontrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '500':
-          description: "Erro interno do servidor."
           content:
             application/json:
               schema:
@@ -785,11 +572,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [nomeCompleto, cpf, senha, email, tipoConta]
+              required: [nomeCompleto, cpf, senha, email]
               properties:
                 nomeCompleto: 
                   type: string
-                  example: "João Silva Teste"
+                  example: "João Silva"
                 cpf: 
                   type: string
                   example: "12345678901"
@@ -801,11 +588,6 @@ paths:
                   type: string
                   format: email
                   example: "joao.silva@email.com"
-                tipoConta:
-                  type: string
-                  enum: ["poupanca", "corrente"]
-                  example: "corrente"
-                  description: "Tipo de conta: poupança ou corrente"
       responses:
         '201':
           description: "Cliente criado com sucesso."
@@ -820,148 +602,128 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
 
+  /account/me:
     get:
-      tags: ["Clientes"]
-      summary: "Lista todas as contas ativas."
-      description: "Retorna uma lista de todas as contas ativas e seus cartões."
+      tags: ["Contas"]
+      summary: "Consulta dados do usuário logado."
+      security:
+        - bearerAuth: []
       responses:
         '200':
-          description: "Lista de contas retornada com sucesso."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/UsuarioConta'
-
-  /clientes/{id}:
-    get:
-      tags: ["Clientes"]
-      summary: "Consulta cliente específico."
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: "Cliente encontrado."
+          description: "Dados do usuário retornados com sucesso."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UsuarioConta'
-        '404':
-          description: "Cliente não encontrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
 
-  /clientes/{id}/saldo:
+  /account/balance:
     get:
-      tags: ["Clientes"]
-      summary: "Consulta saldo e informações de crédito."
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      tags: ["Contas"]
+      summary: "Consulta saldo do usuário logado."
+      security:
+        - bearerAuth: []
       responses:
         '200':
-          description: "Saldo consultado com sucesso."
+          description: "Saldo retornado com sucesso."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SaldoResponse'
-        '400':
-          description: "Erro ao consultar saldo."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
 
-  /cartoes:
-    post:
-      tags: ["Cartões"]
-      summary: "Solicita cartão de crédito."
-      description: "Cria um novo cartão de crédito para uma conta existente."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [usuarioId, bandeira, titularidade]
-              properties:
-                usuarioId:
-                  type: string
-                  format: uuid
-                  description: "ID do usuário que receberá o cartão."
-                  example: "0b4fe053-84c3-4524-92e9-2555bd24b353"
-                bandeira:
-                  type: string
-                  enum: ["visa", "master", "elo", "amex"]
-                  description: "Bandeira do cartão."
-                  example: "visa"
-                titularidade:
-                  type: string
-                  enum: ["titular", "adicional"]
-                  description: "Se o cartão é para o titular ou um adicional."
-                  example: "titular"
-                limite:
-                  type: number
-                  format: float
-                  description: "Limite de crédito do cartão."
-                  example: 1500
-      responses:
-        '201':
-          description: "Cartão de crédito criado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cartao'
-        '400':
-          description: "Dados inválidos ou usuário não encontrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /cartoes/cliente/{usuarioId}:
+  /account/statement:
     get:
-      tags: ["Cartões"]
-      summary: "Lista cartões do cliente."
+      tags: ["Contas"]
+      summary: "Consulta extrato do usuário logado."
+      security:
+        - bearerAuth: []
       parameters:
-        - name: usuarioId
-          in: path
-          required: true
+        - name: pagina
+          in: query
           schema:
-            type: string
-            format: uuid
+            type: integer
+            default: 1
+        - name: limite
+          in: query
+          schema:
+            type: integer
+            default: 10
       responses:
         '200':
-          description: "Cartões listados com sucesso."
+          description: "Extrato retornado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtratoResponse'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+
+  /cards:
+    get:
+      tags: ["Cartões"]
+      summary: "Lista cartões do usuário logado."
+      description: "Retorna todos os cartões (débito e crédito) do usuário autenticado."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Cartões retornados com sucesso."
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Cartao'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+    post:
+      tags: ["Cartões"]
+      summary: "Solicita um novo cartão para o usuário logado."
+      description: "Cria uma solicitação de novo cartão (débito ou crédito) para o usuário autenticado. O cartão é automaticamente vinculado à conta do usuário."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo]
+              properties:
+                tipo:
+                  type: string
+                  enum: [debito, credito]
+                  example: "credito"
+                  description: "Tipo do cartão a ser solicitado"
+      responses:
+        '201':
+          description: "Cartão solicitado com sucesso."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cartao'
         '400':
-          description: "Erro ao listar cartões."
+          description: "Erro na solicitação do cartão (ex: usuário já possui cartão do mesmo tipo)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
 
-  /cartoes/{id}/pin:
+  /cards/{id}/pin:
     patch:
       tags: ["Cartões"]
-      summary: "Define PIN do cartão (apenas débito)."
+      summary: "Define PIN do cartão do usuário logado."
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -986,21 +748,19 @@ paths:
       responses:
         '200':
           description: "PIN alterado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
         '400':
           description: "Erro ao alterar PIN."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+        '403':
+          description: "Cartão não pertence ao usuário."
 
-  /cartoes/{id}/bloquear:
+  /cards/{id}/bloquear:
     patch:
       tags: ["Cartões"]
-      summary: "Bloqueia um cartão."
+      summary: "Bloqueia um cartão do usuário logado."
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1017,15 +777,17 @@ paths:
                 $ref: '#/components/schemas/Cartao'
         '400':
           description: "Erro ao bloquear cartão."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+        '403':
+          description: "Cartão não pertence ao usuário."
 
-  /cartoes/{id}/desbloquear:
+  /cards/{id}/desbloquear:
     patch:
       tags: ["Cartões"]
-      summary: "Desbloqueia um cartão."
+      summary: "Desbloqueia um cartão do usuário logado."
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1042,53 +804,41 @@ paths:
                 $ref: '#/components/schemas/Cartao'
         '400':
           description: "Erro ao desbloquear cartão."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+        '403':
+          description: "Cartão não pertence ao usuário."
 
-  /transacoes/transferir:
+  /transactions/transfer:
     post:
       tags: ["Transações"]
-      summary: "Realiza transferência entre contas por agência/conta."
-      description: "Transfere valor entre contas usando agência/conta e PIN do cartão de débito. Valor mínimo R$ 10,00 e máximo R$ 5.000,00."
+      summary: "Realiza transferência da conta do usuário logado."
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [agenciaOrigem, contaOrigem, agenciaDestino, contaDestino, valor, cartaoId, pin]
+              required: [agenciaDestino, contaDestino, valor, cartaoId, pin]
               properties:
-                agenciaOrigem:
-                  type: string
-                  description: "Agência da conta de origem"
-                  example: "0001"
-                contaOrigem:
-                  type: string
-                  description: "Número da conta de origem"
-                  example: "87654321"
                 agenciaDestino:
                   type: string
-                  description: "Agência da conta de destino"
                   example: "0001"
                 contaDestino:
                   type: string
-                  description: "Número da conta de destino"
                   example: "12345678"
                 valor:
                   type: number
                   format: float
-                  description: "Valor da transferência (mínimo R$ 10,00, máximo R$ 5.000,00)"
                   example: 100.00
                 cartaoId:
                   type: string
                   format: uuid
-                  description: "ID do cartão de débito"
                   example: "31d55a19-96af-485d-bd21-ad6ac22f9065"
                 pin:
                   type: string
-                  description: "PIN do cartão de débito"
                   example: "1234"
       responses:
         '200':
@@ -1099,37 +849,29 @@ paths:
                 $ref: '#/components/schemas/TransferenciaResponse'
         '400':
           description: "Erro na transferência."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
 
-  /transacoes/depositar:
+  /transactions/deposit:
     post:
       tags: ["Transações"]
-      summary: "Realiza depósito em conta."
-      description: "Deposita valor em uma conta específica usando agência e número da conta."
+      summary: "Realiza depósito na conta do usuário logado."
+      description: "Efetua um depósito na conta bancária do usuário autenticado. O valor é creditado automaticamente no saldo da conta."
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [agencia, conta, valor]
+              required: [valor]
               properties:
-                agencia:
-                  type: string
-                  description: "Agência da conta"
-                  example: "0001"
-                conta:
-                  type: string
-                  description: "Número da conta"
-                  example: "12345678"
                 valor:
                   type: number
                   format: float
-                  description: "Valor do depósito"
                   example: 500.00
+                  description: "Valor a ser depositado (deve ser maior que zero)"
       responses:
         '200':
           description: "Depósito realizado com sucesso."
@@ -1138,344 +880,170 @@ paths:
               schema:
                 $ref: '#/components/schemas/DepositoResponse'
         '400':
-          description: "Erro no depósito."
+          description: "Erro no depósito (ex: valor inválido)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
 
-  /transacoes/compra-credito:
+  /transactions/credit-purchase:
     post:
       tags: ["Transações"]
-      summary: "Realiza compra no cartão de crédito."
+      summary: "Realiza compra com cartão de crédito do usuário logado."
+      description: "Efetua uma compra utilizando o cartão de crédito ativo do usuário autenticado. O valor é debitado do limite disponível do cartão."
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [cartaoId, valor, estabelecimento]
+              required: [valor, estabelecimento]
               properties:
-                cartaoId:
-                  type: string
-                  format: uuid
-                  example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
-                valor:
-                  type: number
-                  format: float
-                  example: 100.00
-                estabelecimento:
-                  type: string
-                  example: "Loja Teste"
-      responses:
-        '200':
-          description: "Compra realizada com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          description: "Erro na compra."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /transacoes/pagar-fatura:
-    post:
-      tags: ["Transações"]
-      summary: "Paga fatura do cartão de crédito."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [usuarioId, valor]
-              properties:
-                usuarioId:
-                  type: string
-                  format: uuid
-                  example: "0b4fe053-84c3-4524-92e9-2555bd24b353"
                 valor:
                   type: number
                   format: float
                   example: 50.00
+                  description: "Valor da compra (deve ser maior que zero)"
+                estabelecimento:
+                  type: string
+                  example: "Loja Exemplo"
+                  description: "Nome do estabelecimento onde a compra foi realizada"
       responses:
-        '200':
+        '201':
+          description: "Compra realizada com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactionId:
+                    type: string
+                    example: "txn_123456789"
+                  type:
+                    type: string
+                    example: "CREDIT_PURCHASE"
+                  amount:
+                    type: number
+                    format: float
+                    example: 50.00
+                  description:
+                    type: string
+                    example: "Compra no crédito em Loja Exemplo"
+                  date:
+                    type: string
+                    format: date-time
+                    example: "2025-08-02T17:41:17.000Z"
+                  status:
+                    type: string
+                    example: "COMPLETED"
+                  cardId:
+                    type: string
+                    format: uuid
+                    example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
+        '400':
+          description: "Erro na compra (ex: valor inválido, limite insuficiente)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: "Cartão de crédito ativo não encontrado para o usuário."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /transactions/pay-bill:
+    post:
+      tags: ["Transações"]
+      summary: "Paga fatura do cartão de crédito do usuário logado."
+      description: "Efetua o pagamento da fatura do cartão de crédito ativo do usuário autenticado. O valor é debitado da conta corrente do usuário."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [valor]
+              properties:
+                valor:
+                  type: number
+                  format: float
+                  example: 50.00
+                  description: "Valor do pagamento da fatura (deve ser maior que zero)"
+      responses:
+        '201':
           description: "Fatura paga com sucesso."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                properties:
+                  transactionId:
+                    type: string
+                    example: "txn_987654321"
+                  type:
+                    type: string
+                    example: "BILL_PAYMENT"
+                  amount:
+                    type: number
+                    format: float
+                    example: 50.00
+                  description:
+                    type: string
+                    example: "Pagamento de fatura do cartão de crédito"
+                  date:
+                    type: string
+                    format: date-time
+                    example: "2025-08-02T17:41:17.000Z"
+                  status:
+                    type: string
+                    example: "COMPLETED"
+                  cardId:
+                    type: string
+                    format: uuid
+                    example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
         '400':
-          description: "Erro ao pagar fatura."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /transacoes/extrato/{usuarioId}:
-    get:
-      tags: ["Transações"]
-      summary: "Consulta extrato de movimentações."
-      parameters:
-        - name: usuarioId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: pagina
-          in: query
-          schema:
-            type: integer
-            default: 1
-        - name: limite
-          in: query
-          schema:
-            type: integer
-            default: 10
-      responses:
-        '200':
-          description: "Extrato retornado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ExtratoResponse'
-        '400':
-          description: "Erro ao consultar extrato."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  # Rotas de Administração (Admin only)
-  /admin/clientes/{id}/limite:
-    patch:
-      tags: ["Administração"]
-      summary: "Atualiza limites de crédito (Admin only)."
-      description: "Permite que administradores atualizem os limites de crédito e débito diário de um cliente."
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [limiteCredito]
-              properties:
-                limiteCredito:
-                  type: number
-                  format: float
-                  example: 5000.00
-                limiteDebitoDiario:
-                  type: number
-                  format: float
-                  example: 10000.00
-      responses:
-        '200':
-          description: "Limites atualizados com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsuarioConta'
-        '400':
-          description: "Dados inválidos."
+          description: "Erro ao pagar fatura (ex: valor inválido, saldo insuficiente)."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
         '401':
-          description: "Token de autenticação necessário."
-        '403':
-          description: "Acesso negado. Apenas administradores."
-
-  /admin/clientes/{id}/bloquear:
-    patch:
-      tags: ["Administração"]
-      summary: "Bloqueia/desbloqueia conta (Admin only)."
-      description: "Permite que administradores bloqueiem ou desbloqueiem contas de clientes."
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [contaBloqueada]
-              properties:
-                contaBloqueada:
-                  type: boolean
-                  example: true
-      responses:
-        '200':
-          description: "Status da conta alterado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsuarioConta'
-        '400':
-          description: "Dados inválidos."
+          description: "Token de autenticação inválido ou expirado."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
-        '401':
-          description: "Token de autenticação necessário."
-        '403':
-          description: "Acesso negado. Apenas administradores."
-
-  /admin/cartoes/{id}/limite:
-    patch:
-      tags: ["Administração"]
-      summary: "Atualiza limite do cartão (Admin only)."
-      description: "Permite que administradores atualizem o limite de cartões de crédito."
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [limite]
-              properties:
-                limite:
-                  type: number
-                  format: float
-                  example: 3000.00
-      responses:
-        '200':
-          description: "Limite do cartão atualizado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cartao'
-        '400':
-          description: "Dados inválidos."
+        '404':
+          description: "Cartão de crédito ativo não encontrado para o usuário."
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
-        '401':
-          description: "Token de autenticação necessário."
-        '403':
-          description: "Acesso negado. Apenas administradores."
 
-  /admin/clientes/{id}:
-    delete:
-      tags: ["Administração"]
-      summary: "Desativa conta (Admin only)."
-      description: "Permite que administradores desativem contas de clientes (soft delete)."
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: "Conta desativada com sucesso."
-        '400':
-          description: "Erro ao desativar conta."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '401':
-          description: "Token de autenticação necessário."
-        '403':
-          description: "Acesso negado. Apenas administradores."
-
-  /admin/relatorio:
-    get:
-      tags: ["Administração"]
-      summary: "Gera relatório geral (Admin only)."
-      description: "Permite que administradores gerem relatórios com estatísticas do sistema."
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200':
-          description: "Relatório gerado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RelatorioResponse'
-        '401':
-          description: "Token de autenticação necessário."
-        '403':
-          description: "Acesso negado. Apenas administradores."
-
-  # Novos Endpoints - Contas
-  /api/account/balance:
-    get:
-      tags: ["Contas"]
-      summary: "Consultar saldo da conta"
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200':
-          description: "Saldo consultado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SaldoResponse'
-        '401':
-          description: "Token de autenticação necessário."
-
-  /api/account/statement:
-    get:
-      tags: ["Contas"]
-      summary: "Consultar extrato da conta"
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 10
-      responses:
-        '200':
-          description: "Extrato consultado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ExtratoResponse'
-        '401':
-          description: "Token de autenticação necessário."
-
-  # Novos Endpoints - Investimentos
-  /api/investments/summary:
+  /investments/summary:
     get:
       tags: ["Investimentos"]
-      summary: "Resumo de investimentos"
-      security: [{ bearerAuth: [] }]
+      summary: "Resumo de investimentos do usuário logado."
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: "Resumo obtido com sucesso."
@@ -1497,445 +1065,4 @@ paths:
                     items:
                       $ref: '#/components/schemas/Investment'
         '401':
-          description: "Token de autenticação necessário."
-
-  /api/investments/savings:
-    get:
-      tags: ["Investimentos"]
-      summary: "Consultar poupança"
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200':
-          description: "Dados da poupança consultados com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  saldo:
-                    type: number
-                    format: float
-                    example: 1500.00
-                  rendimentoMensal:
-                    type: number
-                    format: float
-                    example: 7.50
-                  aniversario:
-                    type: integer
-                    example: 15
-        '401':
-          description: "Token de autenticação necessário."
-        '500':
-          description: "Erro interno do servidor."
-
-  # Novos Endpoints - Consultas de Conta e Cartão
-  /api/contas/saldo:
-    get:
-      tags: ["Consultas"]
-      summary: "Consultar saldo da conta corrente"
-      description: "Retorna o saldo atual da conta corrente, limite de crédito e limite diário."
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200':
-          description: "Saldo consultado com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  contaCorrente:
-                    type: object
-                    properties:
-                      saldo:
-                        type: number
-                        format: float
-                        example: 1250.00
-                      agencia:
-                        type: string
-                        example: "0001"
-                      numeroConta:
-                        type: string
-                        example: "00123-4"
-                      tipoConta:
-                        type: string
-                        example: "corrente"
-                      moeda:
-                        type: string
-                        example: "BRL"
-                  limiteCredito:
-                    type: object
-                    properties:
-                      limite:
-                        type: number
-                        format: float
-                        example: 5000.00
-                      utilizado:
-                        type: number
-                        format: float
-                        example: 0.00
-                      disponivel:
-                        type: number
-                        format: float
-                        example: 5000.00
-                  limiteDiario:
-                    type: object
-                    properties:
-                      limite:
-                        type: number
-                        format: float
-                        example: 200.00
-                      moeda:
-                        type: string
-                        example: "BRL"
-        '401':
-          description: "Usuário não autenticado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '404':
-          description: "Usuário não encontrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '500':
-          description: "Erro interno do servidor."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /api/contas/extrato:
-    get:
-      tags: ["Consultas"]
-      summary: "Consultar extrato da conta corrente"
-      description: "Retorna o extrato da conta corrente com filtros opcionais de data e tipo de transação."
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: dataInicio
-          in: query
-          description: "Data de início do período (formato: YYYY-MM-DD)"
-          required: false
-          schema:
-            type: string
-            format: date
-            example: "2025-01-01"
-        - name: dataFim
-          in: query
-          description: "Data de fim do período (formato: YYYY-MM-DD)"
-          required: false
-          schema:
-            type: string
-            format: date
-            example: "2025-01-31"
-        - name: tipoTransacao
-          in: query
-          description: "Tipo de transação para filtrar"
-          required: false
-          schema:
-            type: string
-            enum: [deposito, saque, transferencia_enviada, transferencia_recebida, pix_enviado, pix_recebido, pagamento_cartao]
-            example: "transferencia_enviada"
-      responses:
-        '200':
-          description: "Extrato consultado com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  conta:
-                    type: object
-                    properties:
-                      agencia:
-                        type: string
-                        example: "0001"
-                      numeroConta:
-                        type: string
-                        example: "00123-4"
-                      tipoConta:
-                        type: string
-                        example: "corrente"
-                  periodo:
-                    type: object
-                    properties:
-                      dataInicio:
-                        type: string
-                        format: date
-                        nullable: true
-                        example: "2025-01-01"
-                      dataFim:
-                        type: string
-                        format: date
-                        nullable: true
-                        example: "2025-01-31"
-                  transacoes:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                          example: "e8ffcb17-aa14-4830-8e31-3ca7199391fe"
-                        descricao:
-                          type: string
-                          example: "Transferência recebida de John Doe"
-                        valor:
-                          type: number
-                          format: float
-                          example: 1500.00
-                        data:
-                          type: string
-                          format: date-time
-                          example: "2025-01-15T10:30:00.000Z"
-                        tipo:
-                          type: string
-                          example: "transferencia_recebida"
-                        status:
-                          type: string
-                          example: "CONCLUIDA"
-                  resumo:
-                    type: object
-                    properties:
-                      totalTransacoes:
-                        type: integer
-                        example: 5
-                      saldoAtual:
-                        type: number
-                        format: float
-                        example: 1250.00
-        '401':
-          description: "Usuário não autenticado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '404':
-          description: "Usuário não encontrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '500':
-          description: "Erro interno do servidor."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /api/cartoes/limite:
-    get:
-      tags: ["Consultas"]
-      summary: "Consultar limite dos cartões"
-      description: "Retorna informações sobre os limites de todos os cartões do usuário."
-      security: [{ bearerAuth: [] }]
-      responses:
-        '200':
-          description: "Limites consultados com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  usuario:
-                    type: object
-                    properties:
-                      nome:
-                        type: string
-                        example: "Ana Silva"
-                      agencia:
-                        type: string
-                        example: "0001"
-                      conta:
-                        type: string
-                        example: "00123-4"
-                  cartoes:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                          example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
-                        tipo:
-                          type: string
-                          enum: [CREDITO, DEBITO]
-                          example: "CREDITO"
-                        bandeira:
-                          type: string
-                          example: "visa"
-                        numero:
-                          type: string
-                          example: "**** **** **** 2344"
-                        limite:
-                          type: object
-                          oneOf:
-                            - type: object
-                              description: "Limite para cartão de crédito"
-                              properties:
-                                total:
-                                  type: number
-                                  format: float
-                                  example: 5000.00
-                                disponivel:
-                                  type: number
-                                  format: float
-                                  example: 5000.00
-                                utilizado:
-                                  type: number
-                                  format: float
-                                  example: 0.00
-                                faturaAtual:
-                                  type: number
-                                  format: float
-                                  example: 0.00
-                            - type: object
-                              description: "Limite para cartão de débito"
-                              properties:
-                                diario:
-                                  type: number
-                                  format: float
-                                  example: 200.00
-                                saldoConta:
-                                  type: number
-                                  format: float
-                                  example: 1250.00
-                        status:
-                          type: string
-                          enum: [ativo, bloqueado]
-                          example: "ativo"
-                        dataVencimento:
-                          type: string
-                          format: date
-                          nullable: true
-                          example: "2025-12-31"
-                        moeda:
-                          type: string
-                          example: "BRL"
-        '401':
-          description: "Usuário não autenticado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '404':
-          description: "Usuário não encontrado ou nenhum cartão ativo encontrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '500':
-          description: "Erro interno do servidor."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /api/cartoes/limite/{cartaoId}:
-    get:
-      tags: ["Consultas"]
-      summary: "Consultar limite de um cartão específico"
-      description: "Retorna informações detalhadas sobre o limite de um cartão específico."
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - name: cartaoId
-          in: path
-          description: "ID do cartão"
-          required: true
-          schema:
-            type: string
-            format: uuid
-            example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
-      responses:
-        '200':
-          description: "Limite do cartão consultado com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                    example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
-                  tipo:
-                    type: string
-                    enum: [credito, debito]
-                    example: "credito"
-                  bandeira:
-                    type: string
-                    example: "visa"
-                  numero:
-                    type: string
-                    example: "**** **** **** 2344"
-                  status:
-                    type: string
-                    enum: [ativo, bloqueado]
-                    example: "ativo"
-                  limite:
-                    type: object
-                    oneOf:
-                      - type: object
-                        description: "Limite para cartão de crédito"
-                        properties:
-                          total:
-                            type: number
-                            format: float
-                            example: 5000.00
-                          disponivel:
-                            type: number
-                            format: float
-                            example: 5000.00
-                          utilizado:
-                            type: number
-                            format: float
-                            example: 0.00
-                          faturaAtual:
-                            type: number
-                            format: float
-                            example: 0.00
-                          dataVencimento:
-                            type: string
-                            format: date
-                            nullable: true
-                            example: "2025-12-31"
-                          dataFechamento:
-                            type: string
-                            format: date
-                            nullable: true
-                            example: "2025-12-25"
-                      - type: object
-                        description: "Limite para cartão de débito"
-                        properties:
-                          diario:
-                            type: number
-                            format: float
-                            example: 200.00
-                          saldoConta:
-                            type: number
-                            format: float
-                            example: 1250.00
-                  moeda:
-                    type: string
-                    example: "BRL"
-        '401':
-          description: "Usuário não autenticado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '404':
-          description: "Cartão não encontrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '500':
-          description: "Erro interno do servidor."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
+          description: "Token de autenticação inválido ou expirado."

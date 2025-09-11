@@ -7,7 +7,6 @@
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "db:seed": "ts-node src/database/seeds/create-admin.ts",
     "test": "jest"
   },
   "keywords": [

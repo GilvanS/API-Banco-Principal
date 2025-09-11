@@ -172,7 +172,7 @@ export class UsuarioContaService {
                 tipo: TipoCartao.DEBITO,
                 bandeira: BandeiraCartao.MASTERCARD,
                 titularidade: TitularidadeCartao.TITULAR,
-                numero: this.gerarNumeroCartao(),
+                numero: this.gerarNumeroCartao(BandeiraCartao.MASTERCARD),
                 cvv: this.gerarCVV(),
                 dataValidade: this.gerarDataValidade(),
                 pin: await bcrypt.hash("1234", 10) // PIN padrão
@@ -186,7 +186,7 @@ export class UsuarioContaService {
                 tipo: TipoCartao.CREDITO,
                 bandeira: BandeiraCartao.VISA,
                 titularidade: TitularidadeCartao.TITULAR,
-                numero: this.gerarNumeroCartao(),
+                numero: this.gerarNumeroCartao(BandeiraCartao.VISA),
                 cvv: this.gerarCVV(),
                 dataValidade: this.gerarDataValidade(),
                 limite: 1000.00 // Limite inicial
@@ -205,8 +205,22 @@ export class UsuarioContaService {
         }
     }
 
-    private static gerarNumeroCartao(): string {
-        return "5" + Math.random().toString().slice(2, 16);
+    private static gerarNumeroCartao(bandeira?: BandeiraCartao): string {
+        let prefixo = "4"; // Padrão Visa
+        
+        if (bandeira === BandeiraCartao.MASTERCARD) {
+            prefixo = "5";
+        } else if (bandeira === BandeiraCartao.VISA) {
+            prefixo = "4";
+        }
+        
+        // Gerar 15 dígitos restantes para completar 16 dígitos
+        let numero = prefixo;
+        for (let i = 0; i < 15; i++) {
+            numero += Math.floor(Math.random() * 10);
+        }
+        
+        return numero;
     }
 
     private static gerarCVV(): string {

@@ -52,8 +52,8 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/cards/request - Solicitar novo cartão
-router.post('/request', authMiddleware, async (req, res) => {
+// POST /api/v1/cards - Solicitar novo cartão
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
@@ -254,6 +254,42 @@ router.get('/:cardId/invoice', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erro ao consultar fatura:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// PUT /api/cards/:cardId/pin - Alterar PIN do cartão
+router.put('/:cardId/pin', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    const { cardId } = req.params;
+    const { currentPin, newPin } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    if (!currentPin || !newPin) {
+      return res.status(400).json({ error: 'PIN atual e novo PIN são obrigatórios' });
+    }
+
+    if (currentPin === newPin) {
+      return res.status(400).json({ error: 'O novo PIN não pode ser igual ao PIN atual' });
+    }
+
+    // Verificar se o cartão pertence ao usuário
+    const cartoes = await CartaoService.buscarCartoesUsuario(userId);
+    const cartao = cartoes.find(c => c.id === cardId);
+    
+    if (!cartao) {
+      return res.status(404).json({ error: 'Cartão não encontrado' });
+    }
+
+    const result = await CartaoService.definirPIN(cardId, currentPin, newPin);
+
+    res.json({ message: result.mensagem });
+  } catch (error: any) {
+    console.error('Erro ao alterar PIN do cartão:', error);
+    res.status(500).json({ error: error.message || 'Erro interno do servidor' });
   }
 });
 

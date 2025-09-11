@@ -33,21 +33,21 @@ Milestone: Refatoração da API para Aquisição (NuvemBank v1.0)
 
 Task 1: Limpeza e Estruturação do Core
 Issue: Remover Módulo de Administração
-- [ ] Excluir todas as rotas que começam com /admin.
-- [ ] Remover a tag Administração e o schema RelatorioResponse do Swagger.
-- [ ] Remover o campo role do modelo e da tabela UsuarioConta.
+- [x] Excluir todas as rotas que começam com /admin.
+- [x] Remover a tag Administração e o schema RelatorioResponse do Swagger.
+- [x] Remover o campo role do modelo e da tabela UsuarioConta.
 
 Issue: Remover Módulo de Dispositivos
-- [ ] Excluir o modelo/schema Device.
-- [ ] Remover a propriedade dispositivos do modelo UsuarioConta.
+- [x] Excluir o modelo/schema Device.
+- [x] Remover a propriedade dispositivos do modelo UsuarioConta.
 
 Issue: Simplificar Autenticação
-- [ ] Ajustar a validade do token JWT para 30 minutos na lógica de login.
-- [ ] Remover os endpoints e a lógica de forgot-password e reset-password.
+- [x] Ajustar a validade do token JWT para 30 minutos na lógica de login.
+- [x] Remover os endpoints e a lógica de forgot-password e reset-password.
 
 Issue: Padronizar Rotas da API
-- [ ] Aplicar o prefixo /api/v1/ a todas as rotas de negócio.
-- [ ] Atualizar o Swagger e as implementações dos controladores.
+- [x] Aplicar o prefixo /api/v1/ a todas as rotas de negócio.
+- [x] Atualizar o Swagger e as implementações dos controladores.
 
 Task 2: Refatoração do Módulo de Aquisição e Contas
 Issue: Otimizar Endpoint de Criação de Cliente (POST /api/v1/clientes)
@@ -63,7 +63,7 @@ Task 3: Refatoração dos Módulos de Cartões e Transações
 Issue: Adaptar Endpoints de Cartões para Usuário Logado
 - [ ] Modificar GET /api/v1/cards para listar os cartões do usuário autenticado.
 - [ ] Modificar POST /api/v1/cards (solicitação de crédito) para não exigir usuarioId no corpo.
-- [ ] Garantir que o bloqueio, desbloqueio e alteração de PIN funcionem com o cartão pertencente ao usuário do token.
+- [x] Garantir que o bloqueio, desbloqueio e alteração de PIN funcionem com o cartão pertencente ao usuário do token.
 
 Issue: Adaptar Endpoints de Transações para Usuário Logado
 - [ ] Refatorar POST /api/v1/transactions/deposit para depositar na conta do usuário autenticado.
@@ -93,14 +93,69 @@ Issue: Atualizar Documentação
 - [ ] Atualizar o README.md com o novo propósito da API, instruções de uso e o novo escopo de endpoints.
 
 Status Atual do Projeto:
-- Task 1: Limpeza e Estruturação do Core - 60% concluído
+- Task 1: Limpeza e Estruturação do Core - 100% concluído
 - Task 2: Refatoração do Módulo de Aquisição e Contas - 40% concluído
 - Task 3: Refatoração dos Módulos de Cartões e Transações - 70% concluído
 - Task 4: Correção de Bugs e Dívidas Técnicas - 80% concluído
 - Task 5: Qualidade e Finalização - 20% concluído
 
 Principais Pendências:
-1. Remoção completa dos módulos de Administração e Dispositivos
-2. Criação e padronização dos endpoints de conta (/api/v1/account/*)
-3. Atualização completa da documentação (Swagger e README.md)
-4. Criação de testes abrangentes para o fluxo completo
+1. Criação e padronização dos endpoints de conta (/api/v1/account/*)
+2. Atualização completa da documentação (Swagger e README.md)
+3. Criação de testes abrangentes para o fluxo completo
+
+Esforço Adicional Necessário para Alinhamento Completo:
+
+1. Refatoração do Módulo de Aquisição e Contas
+   Endpoint de Criação de Cliente - PENDENTE
+   - [ ] Simplificar o requestBody para exigir apenas nomeCompleto, cpf, senha, email
+   - [ ] Remover campos desnecessários como tipoConta, agencia, numeroConta do request body (deixar automáticos)
+   - [ ] Garantir que a lógica de criação de conta e cartão de débito associado continue funcionando
+
+   Centralizar Consultas de Conta - PENDENTE
+   - [ ] Criar o endpoint GET /api/v1/account/me para retornar os dados do usuário do token
+   - [ ] Implementar GET /api/v1/account/balance 
+   - [ ] Implementar GET /api/v1/account/statement
+   - [ ] Remover os antigos endpoints que dependiam de ID na URL (ex: /clientes/{id}, /clientes/{id}/saldo)
+
+2. Autenticação
+   Simplificar Autenticação - CONCLUÍDO
+   - [x] Ajustar a validade do token JWT para 30 minutos na lógica de login (✅ JÁ FEITO)
+   - [x] Remover os endpoints e a lógica de forgot-password e reset-password do Swagger
+   - [x] Remover os endpoints e a lógica de forgot-password e reset-password dos controladores
+
+3. Padronização de Rotas
+   Padronizar Rotas da API - CONCLUÍDO
+   - [x] Aplicar o prefixo /api/v1/ a todas as rotas de negócio (✅ JÁ FEITO)
+   - [x] Atualizar o Swagger com as novas rotas padronizadas
+   - [x] Remover rotas duplicadas e desatualizadas do Swagger
+
+4. Refatoração dos Módulos de Cartões e Transações
+   Endpoints de Cartões - PENDENTE
+   - [ ] Modificar GET /api/v1/cards para listar os cartões do usuário autenticado
+   - [ ] Modificar POST /api/v1/cards (solicitação de crédito) para não exigir usuarioId no corpo
+   - [ ] Garantir que o bloqueio, desbloqueio e alteração de PIN funcionem com o cartão pertencente ao usuário do token
+
+   Endpoints de Transações - PENDENTE
+   - [ ] Refatorar POST /api/v1/transactions/deposit para depositar na conta do usuário autenticado
+   - [ ] Refatorar POST /api/v1/transactions/transfer para usar a conta de origem do usuário autenticado
+   - [ ] Refatorar POST /api/v1/transactions/credit-purchase para operar no contexto do usuário do token
+   - [ ] Refatorar POST /api/v1/transactions/pay-bill para operar no contexto do usuário do token
+
+5. Qualidade e Finalização
+   Atualizar Documentação - PENDENTE
+   - [ ] Gerar o novo arquivo swagger.yaml final, refletindo a API simplificada
+   - [ ] Remover todas as referências a módulos de administração e dispositivos
+   - [ ] Atualizar o README.md com o novo propósito da API, instruções de uso e o novo escopo de endpoints
+
+Resumo do Esforço Necessário:
+O projeto está em um estado avançado, mas ainda há trabalho significativo para alinhar completamente com o novo planejamento:
+
+1. Criação de novos endpoints padronizados: Especialmente os endpoints de conta (/api/v1/account/*)
+2. Atualização completa da documentação: Swagger e README.md
+3. Refatoração dos endpoints existentes: Para operar no contexto do usuário autenticado
+
+O esforço estimado seria de aproximadamente 2-3 dias de trabalho full-time para completar todas essas tarefas, considerando a necessidade de manter os testes funcionando e a API estável.
+
+Atualmente estou trabalhando na:
+- Task 3: Refatoração dos Módulos de Cartões e Transações (iniciando)

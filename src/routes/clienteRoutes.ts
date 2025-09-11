@@ -23,8 +23,7 @@ router.post("/",
         body("nomeCompleto").notEmpty().withMessage("Nome completo é obrigatório"),
         body("cpf").isLength({ min: 11, max: 14 }).withMessage("CPF inválido"),
         body("senha").isLength({ min: 6 }).withMessage("Senha deve ter no mínimo 6 caracteres"),
-        body("email").isEmail().withMessage("Email inválido"),
-        body("tipoConta").isIn(Object.values(TipoConta)).withMessage("Tipo de conta deve ser 'poupanca' ou 'corrente'"),
+        body("email").optional().isEmail().withMessage("Email inválido"),
         validateRequest
     ],
     async (req: Request<{}, {}, CreateClienteRequest>, res: Response) => {

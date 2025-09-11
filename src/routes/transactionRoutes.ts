@@ -2,7 +2,9 @@ import { Router } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import { UsuarioContaService } from '../services/UsuarioContaService';
 import { TransacaoService } from '../services/TransacaoService';
+import { CartaoService } from '../services/CartaoService';
 import { TipoMovimentacao } from '../entities/Movimentacao';
+import { TipoCartao } from '../entities/Cartao';
 
 const router = Router();
 
@@ -262,6 +264,100 @@ router.post('/pix', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erro ao realizar PIX:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+
+// POST /api/v1/transactions/credit-purchase - Compra com cartão de crédito
+router.post('/credit-purchase', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const { amount, establishment } = req.body;
+
+    // Validações
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Valor da compra deve ser maior que zero' });
+    }
+    if (!establishment) {
+      return res.status(400).json({ error: 'Estabelecimento é obrigatório' });
+    }
+
+    // Buscar cartões de crédito do usuário
+    const cartoesCredito = await CartaoService.buscarCartoesUsuario(userId);
+    const cartaoCredito = cartoesCredito.find(c => c.tipo === TipoCartao.CREDITO && c.ativo);
+
+    if (!cartaoCredito) {
+      return res.status(404).json({ error: 'Cartão de crédito ativo não encontrado para o usuário' });
+    }
+
+    const resultado = await TransacaoService.compraCredito({
+      numeroCartao: cartaoCredito.numero,
+      valor: amount,
+      estabelecimento
+    });
+
+    res.status(201).json({
+      transactionId: resultado.dados.agencia, // Ajustar conforme o retorno real
+      type: 'CREDIT_PURCHASE',
+      amount: resultado.dados.valor,
+      description: `Compra no crédito em ${establishment}`,
+      date: resultado.dados.data,
+      status: 'COMPLETED',
+      cardId: cartaoCredito.id
+    });
+
+  } catch (error: any) {
+    console.error('Erro ao realizar compra com crédito:', error);
+    res.status(500).json({ error: error.message || 'Erro interno do servidor' });
+  }
+});
+
+// POST /api/v1/transactions/pay-bill - Pagar fatura do cartão de crédito
+router.post('/pay-bill', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const { amount } = req.body;
+
+    // Validações
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Valor do pagamento deve ser maior que zero' });
+    }
+
+    // Buscar cartões de crédito do usuário
+    const cartoesCredito = await CartaoService.buscarCartoesUsuario(userId);
+    const cartaoCredito = cartoesCredito.find(c => c.tipo === TipoCartao.CREDITO && c.ativo);
+
+    if (!cartaoCredito) {
+      return res.status(404).json({ error: 'Cartão de crédito ativo não encontrado para o usuário' });
+    }
+
+    // Chamar serviço para pagar fatura
+    const resultado = await TransacaoService.pagarFatura({
+      usuarioId: userId,
+      valor: amount
+    });
+
+    res.status(201).json({
+      transactionId: resultado.id, // Ajustar conforme o retorno real
+      type: 'BILL_PAYMENT',
+      amount: amount,
+      description: `Pagamento de fatura do cartão de crédito`,
+      date: new Date(), // Ajustar conforme o retorno real
+      status: 'COMPLETED',
+      cardId: cartaoCredito.id
+    });
+
+  } catch (error: any) {
+    console.error('Erro ao pagar fatura:', error);
+    res.status(500).json({ error: error.message || 'Erro interno do servidor' });
   }
 });
 

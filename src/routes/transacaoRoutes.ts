@@ -38,16 +38,7 @@ interface PagamentoDebitoRequest {
     estabelecimento: string;
 }
 
-interface CompraCreditoRequest {
-    numeroCartao: string;
-    valor: number;
-    estabelecimento: string;
-}
 
-interface PagarFaturaRequest {
-    usuarioId: string;
-    valor: number;
-}
 
 // POST /transacoes/transferir - Transferência entre contas por agência/conta/nome/CPF
 router.post("/transferir",
