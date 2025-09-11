@@ -379,6 +379,77 @@ router.get('/savings', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /api/investments/:investmentId/yield - Consultar rendimento de um investimento específico
+router.get('/:investmentId/yield', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    const { investmentId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const investment = await investmentRepository.findOne({
+      where: { id: investmentId, usuarioConta: { id: userId } },
+      relations: ['usuarioConta']
+    });
+
+    if (!investment) {
+      return res.status(404).json({ error: 'Investimento não encontrado' });
+    }
+
+    // Calcular rendimento atual
+    const valorInvestido = Number(investment.valorInvestido);
+    const valorAtual = Number(investment.valorAtual);
+    const rendimentoAbsoluto = valorAtual - valorInvestido;
+    const rendimentoPercentual = valorInvestido > 0 ? (rendimentoAbsoluto / valorInvestido) * 100 : 0;
+
+    // Calcular dias desde a aplicação
+    const diasInvestimento = Math.floor((new Date().getTime() - investment.dataCriacao.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Calcular rendimento diário médio
+    const rendimentoDiario = diasInvestimento > 0 ? rendimentoAbsoluto / diasInvestimento : 0;
+    
+    // Calcular rendimento mensal projetado
+    const rendimentoMensalProjetado = rendimentoDiario * 30;
+    
+    // Calcular rendimento anual projetado
+    const rendimentoAnualProjetado = rendimentoDiario * 365;
+
+    const response = {
+      investmentId: investment.id,
+      name: investment.nome,
+      type: investment.tipo,
+      status: investment.status,
+      investedAmount: valorInvestido,
+      currentValue: valorAtual,
+      yield: {
+        absolute: rendimentoAbsoluto,
+        percentage: Math.round(rendimentoPercentual * 100) / 100,
+        dailyAverage: Math.round(rendimentoDiario * 100) / 100,
+        monthlyProjected: Math.round(rendimentoMensalProjetado * 100) / 100,
+        annualProjected: Math.round(rendimentoAnualProjetado * 100) / 100
+      },
+      period: {
+        investmentDate: investment.dataCriacao,
+        daysInvested: diasInvestimento,
+        maturityDate: investment.dataVencimento
+      },
+      rates: {
+        returnRate: investment.taxaRendimento,
+        currentYield: investment.rentabilidade
+      },
+      canRedeem: investment.permiteResgate,
+      description: investment.descricao
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Erro ao consultar rendimento:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // POST /api/investments/:investmentId/redeem - Resgatar investimento
 router.post('/:investmentId/redeem', authMiddleware, async (req, res) => {
   try {

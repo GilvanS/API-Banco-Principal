@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import { UsuarioContaService } from '../services/UsuarioContaService';
 import { TransacaoService } from '../services/TransacaoService';
+import { CartaoService } from '../services/CartaoService';
+import { TipoCartao } from '../entities/Cartao';
 
 const router = Router();
 
@@ -140,6 +142,44 @@ router.get('/statement', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erro ao consultar extrato:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/v1/account/bill-inquiry - Consultar fatura do cartão de crédito
+router.get('/bill-inquiry', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    // Buscar cartões de crédito do usuário
+    const cartoesCredito = await CartaoService.buscarCartoesUsuario(userId);
+    const cartaoCredito = cartoesCredito.find(c => c.tipo === TipoCartao.CREDITO && c.ativo);
+
+    if (!cartaoCredito) {
+      return res.status(404).json({ error: 'Cartão de crédito ativo não encontrado para o usuário' });
+    }
+
+    // Consultar fatura do cartão
+    const fatura = await CartaoService.consultarFatura(userId, cartaoCredito.id);
+
+    res.status(200).json({
+      cardId: cartaoCredito.id,
+      cardNumber: cartaoCredito.numero,
+      valorTotal: fatura.faturaAtual || 0,
+      valorMinimo: fatura.valorMinimo || 0,
+      limite: fatura.limite,
+      limiteDisponivel: fatura.limiteDisponivel,
+      dataVencimento: fatura.dataVencimento,
+      dataFechamento: fatura.dataFechamento,
+      jurosRotativo: fatura.jurosRotativo,
+      temFaturaPendente: (fatura.faturaAtual || 0) > 0
+    });
+
+  } catch (error: any) {
+    console.error('Erro ao consultar fatura:', error);
+    res.status(500).json({ error: error.message || 'Erro interno do servidor' });
   }
 });
 

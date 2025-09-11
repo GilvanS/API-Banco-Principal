@@ -11,8 +11,8 @@ export class InvestmentService {
     static async obterResumoInvestimentos(usuarioId: string) {
         try {
             const investimentos = await this.repository.find({
-                where: { usuario: { id: usuarioId } },
-                relations: ["usuario"]
+                where: { usuarioConta: { id: usuarioId } },
+                relations: ["usuarioConta"]
             });
 
             const totalInvestido = investimentos.reduce((total, inv) => total + inv.valorInvestido, 0);
@@ -51,9 +51,9 @@ export class InvestmentService {
     static async listarInvestimentos(usuarioId: string) {
         try {
             const investimentos = await this.repository.find({
-                where: { usuario: { id: usuarioId } },
-                relations: ["usuario"],
-                order: { criadoEm: "DESC" }
+                where: { usuarioConta: { id: usuarioId } },
+                relations: ["usuarioConta"],
+                order: { dataCriacao: "DESC" }
             });
 
             return investimentos.map(inv => ({
@@ -64,9 +64,8 @@ export class InvestmentService {
                 valorAtual: inv.valorAtual,
                 rentabilidade: inv.rentabilidade,
                 status: inv.status,
-                dataAplicacao: inv.dataAplicacao,
                 dataVencimento: inv.dataVencimento,
-                criadoEm: inv.criadoEm
+                dataCriacao: inv.dataCriacao
             }));
         } catch (error) {
             LoggerService.error("Erro ao listar investimentos", error);
@@ -116,11 +115,7 @@ export class InvestmentService {
                     risco = "Médio";
                     liquidez = "D+30";
                     break;
-                case TipoInvestimento.FUNDO_ACOES:
-                    rentabilidadeAnual = 18.5;
-                    risco = "Alto";
-                    liquidez = "D+1";
-                    break;
+
                 default:
                     rentabilidadeAnual = 8.0;
                     risco = "Médio";
@@ -173,7 +168,7 @@ export class InvestmentService {
             // Criar investimento
             const dataVencimento = dados.prazo ? 
                 new Date(Date.now() + dados.prazo * 30 * 24 * 60 * 60 * 1000) : 
-                null;
+                new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // Default 1 ano
 
             const investimento = this.repository.create({
                 tipo: dados.tipo,
@@ -181,10 +176,11 @@ export class InvestmentService {
                 valorInvestido: dados.valor,
                 valorAtual: dados.valor,
                 rentabilidade: 0,
+                taxaRendimento: 0,
                 status: StatusInvestimento.ATIVO,
-                dataAplicacao: new Date(),
+                permiteResgate: true,
                 dataVencimento,
-                usuario
+                usuarioConta: usuario
             });
 
             await this.repository.save(investimento);
@@ -207,9 +203,9 @@ export class InvestmentService {
             const investimento = await this.repository.findOne({
                 where: { 
                     id: investimentoId,
-                    usuario: { id: usuarioId }
+                    usuarioConta: { id: usuarioId }
                 },
-                relations: ["usuario"]
+                relations: ["usuarioConta"]
             });
 
             if (!investimento) {
@@ -235,7 +231,6 @@ export class InvestmentService {
 
             // Marcar como resgatado
             investimento.status = StatusInvestimento.RESGATADO;
-            investimento.dataResgate = new Date();
             await this.repository.save(investimento);
 
             LoggerService.info("Investimento resgatado", {
@@ -258,11 +253,11 @@ export class InvestmentService {
         try {
             const poupanca = await this.repository.findOne({
                 where: { 
-                    usuario: { id: usuarioId },
+                    usuarioConta: { id: usuarioId },
                     tipo: TipoInvestimento.POUPANCA,
                     status: StatusInvestimento.ATIVO
                 },
-                relations: ["usuario"]
+                relations: ["usuarioConta"]
             });
 
             if (!poupanca) {
@@ -278,7 +273,7 @@ export class InvestmentService {
                 saldo: poupanca.valorAtual,
                 rendimentoMes: poupanca.valorAtual - poupanca.valorInvestido,
                 rentabilidade: poupanca.rentabilidade,
-                dataUltimoRendimento: poupanca.atualizadoEm
+                dataUltimoRendimento: poupanca.dataAtualizacao
             };
         } catch (error) {
             LoggerService.error("Erro ao consultar poupança", error);

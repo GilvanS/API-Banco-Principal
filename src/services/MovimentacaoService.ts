@@ -1,5 +1,5 @@
 import { AppDataSource } from "../database/data-source";
-import { Movimentacao, TipoMovimentacao, StatusMovimentacao } from "../entities/Movimentacao";
+import { Movimentacao, TipoMovimentacao } from "../entities/Movimentacao";
 import { UsuarioConta } from "../entities/UsuarioConta";
 import { LoggerService } from "./LoggerService";
 import { UsuarioContaService } from "./UsuarioContaService";
@@ -28,13 +28,13 @@ export class MovimentacaoService {
             }
 
             const movimentacao = this.repository.create({
-                usuario,
+                usuarioConta: usuario,
                 tipo: dados.tipo,
                 valor: dados.valor,
                 descricao: dados.descricao || this.gerarDescricaoPadrao(dados.tipo),
                 nomeDestinatario: dados.nomeDestinatario,
                 chavePix: dados.chavePix,
-                status: StatusMovimentacao.CONCLUIDA,
+                status: 'CONCLUIDA',
                 taxa: dados.taxa || 0,
                 observacoes: dados.observacoes
             });
@@ -104,9 +104,9 @@ export class MovimentacaoService {
             amanha.setDate(amanha.getDate() + 1);
 
             const saquesHoje = await this.repository.sum("valor", {
-                usuario: { id: usuarioId },
+                usuarioConta: { id: usuarioId },
                 tipo: TipoMovimentacao.SAQUE,
-                criadoEm: {
+                dataCriacao: {
                     gte: hoje,
                     lt: amanha
                 } as any
@@ -254,18 +254,18 @@ export class MovimentacaoService {
     }) {
         try {
             const queryBuilder = this.repository.createQueryBuilder("movimentacao")
-                .leftJoinAndSelect("movimentacao.usuario", "usuario")
-                .where("usuario.id = :usuarioId", { usuarioId })
-                .orderBy("movimentacao.criadoEm", "DESC");
+                .leftJoinAndSelect("movimentacao.usuarioConta", "usuarioConta")
+                .where("usuarioConta.id = :usuarioId", { usuarioId })
+                .orderBy("movimentacao.dataCriacao", "DESC");
 
             if (filtros?.dataInicio) {
-                queryBuilder.andWhere("movimentacao.criadoEm >= :dataInicio", {
+                queryBuilder.andWhere("movimentacao.dataCriacao >= :dataInicio", {
                     dataInicio: filtros.dataInicio
                 });
             }
 
             if (filtros?.dataFim) {
-                queryBuilder.andWhere("movimentacao.criadoEm <= :dataFim", {
+                queryBuilder.andWhere("movimentacao.dataCriacao <= :dataFim", {
                     dataFim: filtros.dataFim
                 });
             }
@@ -295,7 +295,7 @@ export class MovimentacaoService {
                     status: mov.status,
                     taxa: mov.taxa,
                     observacoes: mov.observacoes,
-                    criadoEm: mov.criadoEm
+                    dataCriacao: mov.dataCriacao
                 })),
                 total,
                 pagina,
@@ -311,12 +311,18 @@ export class MovimentacaoService {
         const descricoes = {
             [TipoMovimentacao.DEPOSITO]: "Depósito em conta",
             [TipoMovimentacao.SAQUE]: "Saque em conta",
+            [TipoMovimentacao.TRANSFERENCIA]: "Transferência",
             [TipoMovimentacao.TRANSFERENCIA_ENVIADA]: "Transferência enviada",
             [TipoMovimentacao.TRANSFERENCIA_RECEBIDA]: "Transferência recebida",
+            [TipoMovimentacao.PIX]: "PIX",
             [TipoMovimentacao.PIX_ENVIADO]: "PIX enviado",
             [TipoMovimentacao.PIX_RECEBIDO]: "PIX recebido",
+            [TipoMovimentacao.PAGAMENTO_DEBITO]: "Pagamento com débito",
+            [TipoMovimentacao.PAGAMENTO_CREDITO]: "Pagamento com crédito",
             [TipoMovimentacao.PAGAMENTO_CARTAO]: "Pagamento com cartão",
+            [TipoMovimentacao.PAGAMENTO_FATURA]: "Pagamento de fatura",
             [TipoMovimentacao.INVESTIMENTO]: "Aplicação em investimento",
+            [TipoMovimentacao.RESGATE_INVESTIMENTO]: "Resgate de investimento",
             [TipoMovimentacao.RENDIMENTO]: "Rendimento de investimento",
             [TipoMovimentacao.TAXA]: "Taxa bancária",
             [TipoMovimentacao.ESTORNO]: "Estorno"

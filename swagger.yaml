@@ -208,52 +208,295 @@ components:
         id:
           type: string
           format: uuid
-          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+          example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
+          description: "ID único do investimento"
         tipo:
           type: string
-          enum: [cdb, lci, lca, tesouro_direto, fundos, poupanca]
-          example: "cdb"
+          enum: [POUPANCA, CDB, LCI, LCA, TESOURO_DIRETO, FUNDOS]
+          example: "POUPANCA"
+          description: "Tipo do investimento"
         nome:
           type: string
-          example: "CDB Banco Principal 120% CDI"
-        valor:
+          example: "Poupança Teste"
+          description: "Nome personalizado do investimento"
+        descricao:
+          type: string
+          nullable: true
+          example: "Investimento de teste"
+          description: "Descrição opcional do investimento"
+        valorInvestido:
           type: number
           format: float
-          example: 1000.00
-        rentabilidade:
+          example: 500.00
+          description: "Valor investido inicialmente"
+        valorAtual:
           type: number
           format: float
-          example: 12.5
-        vencimento:
+          example: 525.13
+          description: "Valor atual do investimento com rendimentos"
+        taxaRetorno:
+          type: number
+          format: float
+          example: 0.5
+          description: "Taxa de retorno anual (%)"
+        dataVencimento:
           type: string
           format: date
-          example: "2025-12-31"
-        liquidez:
-          type: string
-          enum: [diaria, mensal, no_vencimento]
-          example: "diaria"
-        risco:
-          type: string
-          enum: [baixo, medio, alto]
-          example: "baixo"
-        valorMinimo:
-          type: number
-          format: float
-          example: 100.00
+          example: "2026-09-10"
+          description: "Data de vencimento do investimento"
         status:
           type: string
-          enum: [ativo, vencido, resgatado]
-          example: "ativo"
+          enum: [ATIVO, VENCIDO, RESGATADO]
+          example: "ATIVO"
+          description: "Status atual do investimento"
+        podeResgatar:
+          type: boolean
+          example: true
+          description: "Indica se o investimento permite resgate antecipado"
         dataAplicacao:
           type: string
           format: date-time
-          example: "2025-01-15T10:30:00.000Z"
+          example: "2025-09-11T01:43:53.000Z"
+          description: "Data e hora da aplicação"
+        dataAtualizacao:
+          type: string
+          format: date-time
+          example: "2025-09-11T01:43:53.000Z"
+          description: "Data da última atualização"
+        usuarioContaId:
+          type: string
+          format: uuid
+          example: "0b4fe053-84c3-4524-92e9-2555bd24b353"
+          description: "ID do usuário proprietário do investimento"
+    InvestmentYield:
+      type: object
+      description: "Informações detalhadas de rendimento de um investimento"
+      properties:
+        investmentId:
+          type: string
+          format: uuid
+          example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
+        name:
+          type: string
+          example: "Poupança Teste"
+        type:
+          type: string
+          example: "POUPANCA"
+        status:
+          type: string
+          example: "ATIVO"
+        investedAmount:
+          type: number
+          format: float
+          example: 500.00
+          description: "Valor investido inicialmente"
+        currentValue:
+          type: number
+          format: float
+          example: 525.13
+          description: "Valor atual do investimento"
+        yield:
+          $ref: '#/components/schemas/YieldDetails'
+        period:
+          $ref: '#/components/schemas/InvestmentPeriod'
+        rates:
+          $ref: '#/components/schemas/InvestmentRates'
+        canRedeem:
+          type: boolean
+          example: true
+        description:
+          type: string
+          nullable: true
+          example: "Investimento de teste"
+    YieldDetails:
+      type: object
+      description: "Detalhes de rendimento do investimento"
+      properties:
+        absolute:
+          type: number
+          format: float
+          example: 25.13
+          description: "Rendimento absoluto em reais"
+        percentage:
+          type: number
+          format: float
+          example: 5.03
+          description: "Rendimento percentual"
+        dailyAverage:
+          type: number
+          format: float
+          example: 0.84
+          description: "Rendimento diário médio em reais"
+        monthlyProjected:
+          type: number
+          format: float
+          example: 25.20
+          description: "Rendimento mensal projetado em reais"
+        annualProjected:
+          type: number
+          format: float
+          example: 306.60
+          description: "Rendimento anual projetado em reais"
+    InvestmentPeriod:
+      type: object
+      description: "Informações de período do investimento"
+      properties:
+        investmentDate:
+          type: string
+          format: date-time
+          example: "2025-09-11T01:43:53.000Z"
+          description: "Data da aplicação"
+        daysInvested:
+          type: integer
+          example: 30
+          description: "Dias desde a aplicação"
+        maturityDate:
+          type: string
+          format: date
+          example: "2026-09-10"
+          description: "Data de vencimento"
+    InvestmentRates:
+      type: object
+      description: "Taxas e rendimentos do investimento"
+      properties:
+        returnRate:
+          type: number
+          format: float
+          example: 0.5
+          description: "Taxa de retorno anual (%)"
+        currentYield:
+          type: number
+          format: float
+          example: 5.03
+          description: "Rendimento atual (%)"
+    InvestmentSummary:
+      type: object
+      description: "Resumo completo dos investimentos do usuário"
+      properties:
+        totalInvested:
+          type: number
+          format: float
+          example: 5000.00
+          description: "Valor total investido"
+        currentValue:
+          type: number
+          format: float
+          example: 5250.75
+          description: "Valor atual de todos os investimentos"
+        totalReturn:
+          type: number
+          format: float
+          example: 250.75
+          description: "Rendimento total absoluto"
+        returnPercentage:
+          type: number
+          format: float
+          example: 5.02
+          description: "Percentual de rentabilidade total"
+        activeInvestments:
+          type: integer
+          example: 3
+          description: "Quantidade de investimentos ativos"
+        byType:
+          type: array
+          description: "Investimentos agrupados por tipo"
+          items:
+            $ref: '#/components/schemas/InvestmentByType'
+        recentInvestments:
+          type: array
+          description: "Investimentos mais recentes"
+          items:
+            $ref: '#/components/schemas/RecentInvestment'
+    InvestmentByType:
+      type: object
+      description: "Agrupamento de investimentos por tipo"
+      properties:
+        tipo:
+          type: string
+          example: "POUPANCA"
+        quantidade:
+          type: integer
+          example: 1
+        valorInvestido:
+          type: number
+          format: float
+          example: 1000.00
         valorAtual:
           type: number
           format: float
           example: 1050.25
-        usuarioConta:
-          $ref: '#/components/schemas/UsuarioConta'
+        rentabilidade:
+          type: number
+          format: float
+          example: 5.03
+    RecentInvestment:
+      type: object
+      description: "Investimento recente resumido"
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
+        name:
+          type: string
+          example: "Poupança Teste"
+        type:
+          type: string
+          example: "POUPANCA"
+        investedAmount:
+          type: number
+          format: float
+          example: 500.00
+        currentValue:
+          type: number
+          format: float
+          example: 525.13
+        returnPercentage:
+          type: number
+          format: float
+          example: 5.03
+        status:
+          type: string
+          example: "ATIVO"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-09-11T01:43:53.000Z"
+    InvestmentApplication:
+      type: object
+      description: "Dados para aplicação em investimento"
+      required: [tipo, valor, nome]
+      properties:
+        tipo:
+          type: string
+          enum: [POUPANCA, CDB, LCI, LCA, TESOURO_DIRETO, FUNDOS]
+          example: "POUPANCA"
+          description: "Tipo do investimento"
+        valor:
+          type: number
+          format: float
+          minimum: 1
+          example: 500.00
+          description: "Valor a ser investido (mínimo R$ 1,00)"
+        nome:
+          type: string
+          example: "Poupança Teste"
+          description: "Nome personalizado para o investimento"
+        descricao:
+          type: string
+          example: "Investimento de teste"
+          description: "Descrição opcional do investimento"
+    InvestmentRedemption:
+      type: object
+      description: "Dados para resgate de investimento"
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 200.00
+          description: "Valor a ser resgatado (deve ser maior que zero)"
     SaldoResponse:
       type: object
       properties:
@@ -421,32 +664,7 @@ components:
           type: string
           description: "Mensagem de sucesso"
           example: "Compra realizada com sucesso"
-    HealthResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          example: "healthy"
-        database:
-          type: string
-          example: "connected"
-        timestamp:
-          type: string
-          format: date-time
-          example: "2025-08-02T17:32:30.586Z"
-    ApiInfoResponse:
-      type: object
-      properties:
-        message:
-          type: string
-          example: "API NuvemBank v1.0.0"
-        status:
-          type: string
-          example: "online"
-        timestamp:
-          type: string
-          format: date-time
-          example: "2025-08-02T17:32:30.586Z"
+
 
 tags:
   - name: "Autenticação"
@@ -457,8 +675,6 @@ tags:
     description: "Operações de gestão de cartões."
   - name: "Transações"
     description: "Operações financeiras e transações."
-  - name: "Consultas"
-    description: "Consultas e relatórios do sistema."
   - name: "Contas"
     description: "Operações de gestão de contas bancárias."
   - name: "Configurações"
@@ -467,32 +683,6 @@ tags:
     description: "Operações de investimentos e poupança."
 
 paths:
-  /:
-    get:
-      tags: ["Consultas"]
-      summary: "Informações da API"
-      description: "Retorna informações básicas sobre a API."
-      responses:
-        '200':
-          description: "Informações da API retornadas com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiInfoResponse'
-
-  /health:
-    get:
-      tags: ["Consultas"]
-      summary: "Health Check"
-      description: "Verifica o status de saúde da API e conexão com banco de dados."
-      responses:
-        '200':
-          description: "API saudável."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
-
   /auth/login:
     post:
       tags: ["Autenticação"]
@@ -967,11 +1157,87 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
 
+  /account/bill-inquiry:
+    get:
+      tags: ["Contas"]
+      summary: "Consulta fatura do cartão de crédito do usuário logado."
+      description: "Retorna os detalhes da fatura atual do cartão de crédito ativo do usuário autenticado, incluindo valor total, valor mínimo, limite disponível e datas de vencimento."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Fatura consultada com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cardId:
+                    type: string
+                    format: uuid
+                    example: "a70def3c-05c3-4782-b4b2-f9011b39f0a2"
+                    description: "ID do cartão de crédito"
+                  cardNumber:
+                    type: string
+                    example: "5658719913873559"
+                    description: "Número do cartão (parcialmente mascarado)"
+                  valorTotal:
+                    type: number
+                    format: float
+                    example: 150.75
+                    description: "Valor total da fatura"
+                  valorMinimo:
+                    type: number
+                    format: float
+                    example: 15.08
+                    description: "Valor mínimo da fatura"
+                  limite:
+                    type: number
+                    format: float
+                    example: 1000.00
+                    description: "Limite total do cartão"
+                  limiteDisponivel:
+                    type: number
+                    format: float
+                    example: 849.25
+                    description: "Limite disponível para uso"
+                  dataVencimento:
+                    type: string
+                    format: date
+                    example: "2025-09-15"
+                    description: "Data de vencimento da fatura"
+                  dataFechamento:
+                    type: string
+                    format: date
+                    example: "2025-08-15"
+                    description: "Data de fechamento da fatura"
+                  jurosRotativo:
+                    type: number
+                    format: float
+                    example: 12.5
+                    description: "Taxa de juros rotativo (%)"
+                  temFaturaPendente:
+                    type: boolean
+                    example: true
+                    description: "Indica se há fatura pendente para pagamento"
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: "Cartão de crédito ativo não encontrado para o usuário."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
   /transactions/pay-bill:
     post:
       tags: ["Transações"]
       summary: "Paga fatura do cartão de crédito do usuário logado."
-      description: "Efetua o pagamento da fatura do cartão de crédito ativo do usuário autenticado. O valor é debitado da conta corrente do usuário."
+      description: "Efetua o pagamento da fatura do cartão de crédito ativo do usuário autenticado. O valor é debitado da conta corrente do usuário. Agora inclui validação de fatura pendente antes do pagamento."
       security:
         - bearerAuth: []
       requestBody:
@@ -1020,7 +1286,7 @@ paths:
                     format: uuid
                     example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
         '400':
-          description: "Erro ao pagar fatura (ex: valor inválido, saldo insuficiente)."
+          description: "Erro ao pagar fatura (ex: valor inválido, saldo insuficiente, não há fatura pendente, valor excede o valor da fatura)."
           content:
             application/json:
               schema:
@@ -1042,6 +1308,13 @@ paths:
     get:
       tags: ["Investimentos"]
       summary: "Resumo de investimentos do usuário logado."
+      description: |
+        Retorna um resumo completo dos investimentos do usuário, incluindo:
+        - Total investido e valor atual
+        - Rentabilidade total e percentual
+        - Quantidade de investimentos ativos
+        - Agrupamento por tipo de investimento
+        - Lista dos investimentos mais recentes
       security:
         - bearerAuth: []
       responses:
@@ -1052,17 +1325,459 @@ paths:
               schema:
                 type: object
                 properties:
-                  totalInvestido:
+                  totalInvested:
                     type: number
                     format: float
                     example: 5000.00
-                  totalRendimento:
+                    description: "Valor total investido"
+                  currentValue:
+                    type: number
+                    format: float
+                    example: 5250.75
+                    description: "Valor atual de todos os investimentos"
+                  totalReturn:
                     type: number
                     format: float
                     example: 250.75
-                  investimentos:
+                    description: "Rendimento total absoluto"
+                  returnPercentage:
+                    type: number
+                    format: float
+                    example: 5.02
+                    description: "Percentual de rentabilidade total"
+                  activeInvestments:
+                    type: integer
+                    example: 3
+                    description: "Quantidade de investimentos ativos"
+                  byType:
+                    type: array
+                    description: "Investimentos agrupados por tipo"
+                    items:
+                      type: object
+                      properties:
+                        tipo:
+                          type: string
+                          example: "POUPANCA"
+                        quantidade:
+                          type: integer
+                          example: 1
+                        valorInvestido:
+                          type: number
+                          format: float
+                          example: 1000.00
+                        valorAtual:
+                          type: number
+                          format: float
+                          example: 1050.25
+                        rentabilidade:
+                          type: number
+                          format: float
+                          example: 5.03
+                  recentInvestments:
+                    type: array
+                    description: "Investimentos mais recentes"
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
+                        name:
+                          type: string
+                          example: "Poupança Teste"
+                        type:
+                          type: string
+                          example: "POUPANCA"
+                        investedAmount:
+                          type: number
+                          format: float
+                          example: 500.00
+                        currentValue:
+                          type: number
+                          format: float
+                          example: 525.13
+                        returnPercentage:
+                          type: number
+                          format: float
+                          example: 5.03
+                        status:
+                          type: string
+                          example: "ATIVO"
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: "2025-09-11T01:43:53.000Z"
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /investments/apply:
+    post:
+      tags: ["Investimentos"]
+      summary: "Aplicar em um novo investimento."
+      description: |
+        Cria uma nova aplicação de investimento para o usuário logado.
+        O valor é debitado automaticamente da conta corrente.
+        
+        **Tipos de investimento disponíveis:**
+        - POUPANCA: Poupança tradicional
+        - CDB: Certificado de Depósito Bancário
+        - LCI: Letra de Crédito Imobiliário
+        - LCA: Letra de Crédito do Agronegócio
+        - TESOURO_DIRETO: Títulos do Tesouro Nacional
+        - FUNDOS: Fundos de investimento
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, valor, nome]
+              properties:
+                tipo:
+                  type: string
+                  enum: [POUPANCA, CDB, LCI, LCA, TESOURO_DIRETO, FUNDOS]
+                  example: "POUPANCA"
+                  description: "Tipo do investimento"
+                valor:
+                  type: number
+                  format: float
+                  minimum: 1
+                  example: 500.00
+                  description: "Valor a ser investido (mínimo R$ 1,00)"
+                nome:
+                  type: string
+                  example: "Poupança Teste"
+                  description: "Nome personalizado para o investimento"
+                descricao:
+                  type: string
+                  example: "Investimento de teste"
+                  description: "Descrição opcional do investimento"
+      responses:
+        '201':
+          description: "Investimento aplicado com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  investmentId:
+                    type: string
+                    format: uuid
+                    example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
+                  type:
+                    type: string
+                    example: "POUPANCA"
+                  investedAmount:
+                    type: number
+                    format: float
+                    example: 500.00
+                  returnRate:
+                    type: number
+                    format: float
+                    example: 0.5
+                    description: "Taxa de retorno anual (%)"
+                  maturityDate:
+                    type: string
+                    format: date
+                    example: "2026-09-10"
+                    description: "Data de vencimento"
+                  status:
+                    type: string
+                    example: "ATIVO"
+                  canRedeem:
+                    type: boolean
+                    example: true
+                    description: "Indica se permite resgate antecipado"
+                  newAccountBalance:
+                    type: number
+                    format: float
+                    example: 1500.00
+                    description: "Novo saldo da conta após o investimento"
+                  message:
+                    type: string
+                    example: "Investimento realizado com sucesso"
+        '400':
+          description: "Erro na aplicação (saldo insuficiente, valor inválido, etc.)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /investments/applications:
+    get:
+      tags: ["Investimentos"]
+      summary: "Listar todas as aplicações do usuário."
+      description: |
+        Retorna uma lista completa de todos os investimentos do usuário logado,
+        incluindo investimentos ativos, vencidos e resgatados.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: "Filtrar por status do investimento"
+          schema:
+            type: string
+            enum: [ATIVO, VENCIDO, RESGATADO]
+        - name: tipo
+          in: query
+          description: "Filtrar por tipo de investimento"
+          schema:
+            type: string
+            enum: [POUPANCA, CDB, LCI, LCA, TESOURO_DIRETO, FUNDOS]
+      responses:
+        '200':
+          description: "Lista de investimentos retornada com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  investments:
                     type: array
                     items:
                       $ref: '#/components/schemas/Investment'
         '401':
           description: "Token de autenticação inválido ou expirado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /investments/{investmentId}/yield:
+    get:
+      tags: ["Investimentos"]
+      summary: "Consultar rendimento de um investimento específico."
+      description: |
+        Retorna informações detalhadas sobre o rendimento de um investimento específico,
+        incluindo cálculos de rendimento absoluto, percentual, projeções e período de investimento.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: investmentId
+          in: path
+          required: true
+          description: "ID único do investimento"
+          schema:
+            type: string
+            format: uuid
+            example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
+      responses:
+        '200':
+          description: "Rendimento consultado com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  investmentId:
+                    type: string
+                    format: uuid
+                    example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
+                  name:
+                    type: string
+                    example: "Poupança Teste"
+                  type:
+                    type: string
+                    example: "POUPANCA"
+                  status:
+                    type: string
+                    example: "ATIVO"
+                  investedAmount:
+                    type: number
+                    format: float
+                    example: 500.00
+                    description: "Valor investido inicialmente"
+                  currentValue:
+                    type: number
+                    format: float
+                    example: 525.13
+                    description: "Valor atual do investimento"
+                  yield:
+                    type: object
+                    description: "Informações de rendimento"
+                    properties:
+                      absolute:
+                        type: number
+                        format: float
+                        example: 25.13
+                        description: "Rendimento absoluto (R$)"
+                      percentage:
+                        type: number
+                        format: float
+                        example: 5.03
+                        description: "Rendimento percentual (%)"
+                      dailyAverage:
+                        type: number
+                        format: float
+                        example: 0.84
+                        description: "Rendimento diário médio (R$)"
+                      monthlyProjected:
+                        type: number
+                        format: float
+                        example: 25.20
+                        description: "Rendimento mensal projetado (R$)"
+                      annualProjected:
+                        type: number
+                        format: float
+                        example: 306.60
+                        description: "Rendimento anual projetado (R$)"
+                  period:
+                    type: object
+                    description: "Informações de período"
+                    properties:
+                      investmentDate:
+                        type: string
+                        format: date-time
+                        example: "2025-09-11T01:43:53.000Z"
+                        description: "Data da aplicação"
+                      daysInvested:
+                        type: integer
+                        example: 30
+                        description: "Dias desde a aplicação"
+                      maturityDate:
+                        type: string
+                        format: date
+                        example: "2026-09-10"
+                        description: "Data de vencimento"
+                  rates:
+                    type: object
+                    description: "Taxas e rendimentos"
+                    properties:
+                      returnRate:
+                        type: number
+                        format: float
+                        example: 0.5
+                        description: "Taxa de retorno anual (%)"
+                      currentYield:
+                        type: number
+                        format: float
+                        example: 5.03
+                        description: "Rendimento atual (%)"
+                  canRedeem:
+                    type: boolean
+                    example: true
+                    description: "Indica se permite resgate"
+                  description:
+                    type: string
+                    example: "Investimento de teste"
+        '404':
+          description: "Investimento não encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /investments/{investmentId}/redeem:
+    post:
+      tags: ["Investimentos"]
+      summary: "Resgatar investimento (parcial ou total)."
+      description: |
+        Realiza o resgate de um investimento, podendo ser parcial ou total.
+        O valor resgatado é creditado automaticamente na conta corrente.
+        
+        **Tipos de resgate:**
+        - **Parcial**: Resgata apenas parte do valor investido
+        - **Total**: Resgata todo o valor do investimento (encerra o investimento)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: investmentId
+          in: path
+          required: true
+          description: "ID único do investimento"
+          schema:
+            type: string
+            format: uuid
+            example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  example: 200.00
+                  description: "Valor a ser resgatado (deve ser maior que zero)"
+      responses:
+        '200':
+          description: "Resgate realizado com sucesso."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  investmentId:
+                    type: string
+                    format: uuid
+                    example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
+                  redeemedAmount:
+                    type: number
+                    format: float
+                    example: 200.00
+                    description: "Valor resgatado"
+                  remainingAmount:
+                    type: number
+                    format: float
+                    example: 300.00
+                    description: "Valor restante no investimento (0 se resgate total)"
+                  newAccountBalance:
+                    type: number
+                    format: float
+                    example: 1700.00
+                    description: "Novo saldo da conta após o resgate"
+                  redeemType:
+                    type: string
+                    enum: [PARTIAL, TOTAL]
+                    example: "PARTIAL"
+                    description: "Tipo do resgate realizado"
+                  redeemedAt:
+                    type: string
+                    format: date-time
+                    example: "2025-09-11T01:44:15.000Z"
+                    description: "Data e hora do resgate"
+                  message:
+                    type: string
+                    example: "Resgate realizado com sucesso"
+        '400':
+          description: "Erro no resgate (valor inválido, investimento não permite resgate, etc.)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: "Investimento não encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: "Token de autenticação inválido ou expirado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'

@@ -176,7 +176,7 @@ router.post('/transfer', authMiddleware, async (req, res) => {
       agenciaDestino: destinationAgency,
       contaDestino: destinationAccount,
       nomeDestino: destinationName,
-      cpfDestino: '00000000000', // CPF fictício - seria necessário obter do usuário
+      cpfDestino: '12345678901', // CPF da Willa McKenzie
       valor: amount
     });
 
@@ -297,7 +297,7 @@ router.post('/credit-purchase', authMiddleware, async (req, res) => {
     const resultado = await TransacaoService.compraCredito({
       numeroCartao: cartaoCredito.numero,
       valor: amount,
-      estabelecimento
+      estabelecimento: establishment
     });
 
     res.status(201).json({
@@ -337,6 +337,19 @@ router.post('/pay-bill', authMiddleware, async (req, res) => {
 
     if (!cartaoCredito) {
       return res.status(404).json({ error: 'Cartão de crédito ativo não encontrado para o usuário' });
+    }
+
+    // Consultar fatura antes de pagar
+    const fatura = await CartaoService.consultarFatura(userId, cartaoCredito.id);
+    
+    if (!fatura.faturaAtual || fatura.faturaAtual <= 0) {
+      return res.status(400).json({ error: 'Não há fatura pendente para pagamento' });
+    }
+
+    if (amount > fatura.faturaAtual) {
+      return res.status(400).json({ 
+        error: `Valor do pagamento (R$ ${amount.toFixed(2)}) não pode ser maior que o valor da fatura (R$ ${fatura.faturaAtual.toFixed(2)})` 
+      });
     }
 
     // Chamar serviço para pagar fatura
