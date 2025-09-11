@@ -80,11 +80,17 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Usuário já possui cartão deste tipo' });
     }
 
-    // Solicitar cartão
-    const novoCartao = await CartaoService.solicitarCartaoAdicional({
+    // Verificar se já tem cartão ativo (só permite segunda via)
+    const cartoesAtivos = cartoesExistentes.filter(c => c.ativo && c.status === StatusCartao.ATIVO);
+    if (cartoesAtivos.length === 0) {
+      return res.status(400).json({ error: 'Nenhum cartão ativo encontrado. Contate o suporte para solicitar seu primeiro cartão.' });
+    }
+
+    // Para este endpoint, assumir que é uma segunda via por danificação
+    const novoCartao = await CartaoService.solicitarSegundaVia({
       usuarioId: userId,
-      bandeira: brand,
-      limite: 1000.00
+      motivo: 'danificacao',
+      bandeira: brand
     });
 
     const response = {

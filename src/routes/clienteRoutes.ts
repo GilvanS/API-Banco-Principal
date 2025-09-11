@@ -3,7 +3,6 @@ import { body } from "express-validator";
 import { UsuarioContaService } from "../services/UsuarioContaService";
 import { validateRequest } from "../middleware/validateRequest";
 import { LoggerService } from "../services/LoggerService";
-import { TipoConta } from "../entities/UsuarioConta";
 
 const router = Router();
 
@@ -12,9 +11,7 @@ interface CreateClienteRequest {
     cpf: string;
     senha: string;
     email?: string;
-    tipoConta?: TipoConta;
-    agencia?: string;
-    numeroConta?: string;
+    bandeira?: 'V' | 'M'; // V = Visa, M = Mastercard
 }
 
 // POST /clientes - Criar cliente
@@ -24,6 +21,7 @@ router.post("/",
         body("cpf").isLength({ min: 11, max: 14 }).withMessage("CPF inválido"),
         body("senha").isLength({ min: 6 }).withMessage("Senha deve ter no mínimo 6 caracteres"),
         body("email").optional().isEmail().withMessage("Email inválido"),
+        body("bandeira").optional().isIn(['V', 'M']).withMessage("Bandeira deve ser V (Visa) ou M (Mastercard)"),
         validateRequest
     ],
     async (req: Request<{}, {}, CreateClienteRequest>, res: Response) => {

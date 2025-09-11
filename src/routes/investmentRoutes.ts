@@ -5,6 +5,7 @@ import { AppDataSource } from '../database/data-source';
 import { Investment, TipoInvestimento, StatusInvestimento } from '../entities/Investment';
 import { TransacaoService } from '../services/TransacaoService';
 import { TipoMovimentacao } from '../entities/Movimentacao';
+import { idempotencyMiddleware, IdempotentRequest } from '../middleware/idempotencyMiddleware';
 
 const router = Router();
 const investmentRepository = AppDataSource.getRepository(Investment);
@@ -188,7 +189,7 @@ router.post('/simulate', authMiddleware, async (req, res) => {
 });
 
 // POST /api/investments/apply - Aplicar em investimento
-router.post('/apply', authMiddleware, async (req, res) => {
+router.post('/apply', authMiddleware, idempotencyMiddleware, async (req, res) => {
   try {
     const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
@@ -451,7 +452,7 @@ router.get('/:investmentId/yield', authMiddleware, async (req, res) => {
 });
 
 // POST /api/investments/:investmentId/redeem - Resgatar investimento
-router.post('/:investmentId/redeem', authMiddleware, async (req, res) => {
+router.post('/:investmentId/redeem', authMiddleware, idempotencyMiddleware, async (req, res) => {
   try {
     const userId = (req as AuthRequest).usuario?.id;
     const { investmentId } = req.params;

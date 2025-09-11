@@ -1,68 +1,113 @@
 # API Banco Principal
 
-Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force; Get-Process -Name "ts-node" -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host "✅ Todos os processos Node.js foram encerrados"
-✅ Todos os processos Node.js foram encerrados
+Esta é uma API REST completa para um sistema bancário digital moderno, desenvolvida em Node.js com TypeScript. A API oferece funcionalidades essenciais para operações bancárias, incluindo gerenciamento de contas, cartões, transações financeiras e investimentos.
 
+## 🏗️ Arquitetura e Tecnologias
 
-Esta é a API central de um sistema bancário simplificado, projetada para gerenciar contas de usuário, cartões e transações financeiras. A API distingue claramente entre operações de gerenciamento (realizadas por Admins) e operações de cliente final.
+- **Backend**: Node.js com TypeScript e Express.js
+- **Banco de Dados**: TypeORM com suporte a múltiplos SGBDs
+- **Autenticação**: JWT (JSON Web Tokens)
+- **Documentação**: Swagger/OpenAPI 3.0
+- **Testes**: Jest com cobertura de testes unitários e de integração
+- **Validação**: Middleware personalizado para validação de dados
+- **Logs**: Sistema de logging estruturado
 
-## Visão Geral da Arquitetura
+## 🎯 Funcionalidades Principais
 
-A API é construída em Node.js com TypeScript e Express. Ela segue os princípios REST e usa TypeORM para interagir com um banco de dados SQL. A documentação da API é gerada automaticamente a partir de um arquivo `swagger.yaml`.
+### Autenticação e Autorização
+- ✅ Registro de novos usuários
+- ✅ Login com CPF e senha
+- ✅ Autenticação JWT
+- ✅ Middleware de autorização
 
-### Regras de Negócio Principais
+### Gerenciamento de Contas
+- ✅ Criação automática de conta corrente
+- ✅ Consulta de dados da conta
+- ✅ Extrato detalhado com filtros
+- ✅ Controle de limites diários
 
-O sistema opera com base nas seguintes regras:
+### Cartões
+- ✅ Solicitação de cartão de crédito
+- ✅ Consulta de cartões do usuário
+- ✅ Gerenciamento de limites de crédito
+- ✅ Controle de crédito utilizado
 
-1.  **Dois Papéis Principais**:
-    *   **Admin/Operador**: Gerencia o ciclo de vida das contas e cartões. Pode criar usuários, definir limites, bloquear/desbloquear contas e cartões.
-    *   **Cliente**: É o dono da conta. Realiza transações financeiras como transferências e compras.
+### Transações Financeiras
+- ✅ Depósitos em conta
+- ✅ Transferências entre contas
+- ✅ Compras no cartão de crédito
+- ✅ Pagamento de faturas
+- ✅ Histórico completo de transações
 
-2.  **Tipos de Cartão**:
-    *   **Cartão de Débito**: Gerado automaticamente na criação da conta. É vinculado diretamente à conta e usado para transferências e pagamentos, autenticados por um PIN de 4 dígitos.
-    *   **Cartão de Crédito**: Criado opcionalmente por um Admin. Pode ser do tipo `titular` ou `adicional` e é usado para compras, que consomem um limite de crédito pré-aprovado.
+### Investimentos
+- ✅ Resumo de investimentos
+- ✅ Cálculo de rentabilidade
+- ✅ Portfólio diversificado
 
----
+## 📋 Endpoints da API
 
-## Funcionalidades Implementadas (Estrutura)
+### Autenticação (`/api/v1/auth`)
+- `POST /register` - Registro de novo usuário
+- `POST /login` - Login do usuário
 
-Recentemente, a estrutura para as **operações do cliente final** foi adicionada. Isso inclui:
+### Conta (`/api/v1/account`)
+- `GET /profile` - Dados do perfil do usuário
+- `GET /statement` - Extrato da conta com filtros
 
-1.  **Novas Entidades de Dados**:
-    *   `Movimentacao`: Uma nova tabela para registrar todas as transações (transferências, compras, etc.), servindo como extrato da conta.
-    *   Campos adicionados às entidades existentes:
-        *   `pin` na entidade `Cartao` para autenticar operações de débito.
-        *   `creditoUtilizado` na entidade `UsuarioConta` para controlar o saldo do cartão de crédito.
+### Cartões (`/api/v1/cards`)
+- `GET /` - Lista cartões do usuário
+- `POST /request` - Solicitação de cartão de crédito
 
-2.  **Nova Arquitetura de Transações**:
-    *   **Controller**: `TransacaoController.ts` para receber as requisições HTTP.
-    *   **Service**: `TransacaoService.ts` para orquestrar a lógica de negócio (atualmente com a lógica pendente de implementação).
-    *   **Routes**: `transacaoRoutes.ts` para definir os novos endpoints.
+### Transações (`/api/v1/transactions`)
+- `POST /deposit` - Depósito em conta
+- `POST /transfer` - Transferência entre contas
+- `POST /credit-purchase` - Compra no cartão de crédito
+- `POST /pay-bill` - Pagamento de faturas
 
-3.  **Novos Endpoints da API**:
-    *   `POST /transacoes/transferir`: Para o cliente transferir dinheiro para outra conta.
-    *   `POST /transacoes/compra-credito`: Para simular uma compra com cartão de crédito.
-    *   `GET /transacoes/extrato`: Para o cliente consultar seu histórico de transações.
+### Investimentos (`/api/v1/investments`)
+- `GET /summary` - Resumo de investimentos e rentabilidade
 
-4.  **Documentação Atualizada**:
-    *   O arquivo `swagger.yaml` foi atualizado para incluir todos os novos endpoints, schemas e tags, garantindo que a documentação da API esteja sincronizada com o código.
+## 🔒 Segurança
 
----
+- **Autenticação JWT**: Tokens seguros com expiração configurável
+- **Validação de Dados**: Middleware robusto para validação de entrada
+- **Controle de Limites**: Limites diários para débito e crédito
+- **Logs de Auditoria**: Registro detalhado de todas as operações
+- **Middleware de Segurança**: Headers de segurança e proteção CORS
 
-## 🚀 Como Executar
+## 🚀 Instalação e Execução
 
 ### Pré-requisitos
 - Node.js (versão 16 ou superior)
 - npm ou yarn
+- Banco de dados compatível com TypeORM
 
 ### Instalação
 ```bash
+# Clone o repositório
+git clone <repository-url>
+cd API-Banco-Principal
+
+# Instale as dependências
 npm install
+
+# Configure as variáveis de ambiente
+cp .env.example .env
+# Edite o arquivo .env com suas configurações
+```
+
+### Configuração do Banco de Dados
+```bash
+# Execute as migrações
+npm run migration:run
+
+# (Opcional) Execute os seeds para dados de teste
+npm run seed
 ```
 
 ### Execução
 
-#### Modo Desenvolvimento (Recomendado)
+#### Modo Desenvolvimento
 ```bash
 npm run dev
 ```
@@ -73,37 +118,55 @@ npm run build
 npm start
 ```
 
-### Criação do Admin
-
-**✅ IMPORTANTE**: O admin é criado **automaticamente** na primeira execução do servidor!
-
-- **CPF**: `00000000000`
-- **Senha**: `AdminSenhaForte123`
-- **Role**: `admin`
-
-Se por algum motivo o admin não for criado automaticamente, execute:
+### Testes
 ```bash
-npx ts-node src/database/seeds/create-admin.ts
+# Executar todos os testes
+npm test
+
+# Executar testes com cobertura
+npm run test:coverage
+
+# Executar testes de integração
+npm run test:integration
 ```
 
 ### Acesso à API
 
-- **Servidor**: http://localhost:3000
+- **Servidor Local**: http://localhost:3000
 - **Documentação Swagger**: http://localhost:3000/api-docs
 - **Health Check**: http://localhost:3000/health
 
----
+## 📊 Estrutura do Projeto
 
-## Próximas Etapas
+```
+src/
+├── controllers/     # Controladores da API
+├── services/        # Lógica de negócio
+├── entities/        # Entidades do banco de dados
+├── routes/          # Definição das rotas
+├── middleware/      # Middlewares personalizados
+├── database/        # Configuração do banco de dados
+├── utils/           # Utilitários e helpers
+└── types/           # Definições de tipos TypeScript
 
-1.  **Implementar a Lógica de Transferência**:
-    *   Validar o PIN do cartão de débito do remetente.
-    *   Verificar se a conta do remetente tem saldo/limite para a transferência.
-    *   Criar os registros de `Movimentacao` para o remetente (`transferencia_enviada`) e o destinatário (`transferencia_recebida`).
-    *   Atualizar os saldos/limites das contas envolvidas.
+tests/
+├── unit/            # Testes unitários
+├── integration/     # Testes de integração
+└── fixtures/        # Dados de teste
+```
 
-2.  **Implementar a Lógica de Compra com Crédito**:
-    *   Validar os dados do cartão de crédito (número, validade, CVV).
-    *   Verificar se o limite de crédito disponível é suficiente para a compra.
-    *   Atualizar o campo `creditoUtilizado` na conta do cliente.
-    *   Criar o registro de `Movimentacao` para a compra.
+## 🤝 Contribuição
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📝 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 📞 Suporte
+
+Para suporte e dúvidas, entre em contato através dos issues do GitHub ou consulte a documentação completa no Swagger.

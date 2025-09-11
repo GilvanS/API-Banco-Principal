@@ -7,7 +7,7 @@
 - ✅ **Autenticação**: JWT funcionando
 - ✅ **Documentação**: Swagger acessível em /api-docs
 - ✅ **Health Check**: Funcionando em /health
-- ✅ **Admin Padrão**: Criado automaticamente na inicialização
+- ✅ **Sistema de Autenticação**: Implementado com JWT
 
 ## CORREÇÕES REALIZADAS
 
@@ -17,7 +17,7 @@
 
 ## TESTES REALIZADOS
 
-- ✅ **Login como admin**: Funcionando
+- ✅ **Login de usuários**: Funcionando
 - ✅ **Criação de clientes**: Funcionando
 - ✅ **Cartão de débito automático**: Criado automaticamente
 - ✅ **Solicitação de cartão de crédito**: Funcionando
@@ -49,18 +49,13 @@ npm run build
 npm start
 ```
 
-### Criação do Admin
+### Criação de Usuários
 
-**IMPORTANTE**: O admin é criado **automaticamente** na primeira execução do servidor!
+**IMPORTANTE**: Os usuários são criados através do endpoint de registro!
 
-- **CPF**: `00000000000`
-- **Senha**: `AdminSenhaForte123`
-- **Role**: `admin`
-
-**Se por algum motivo o admin não for criado automaticamente, execute:**
-```bash
-npx ts-node src/database/seeds/create-admin.ts
-```
+- **Endpoint**: `POST /api/v1/auth/register`
+- **Dados necessários**: nome, CPF, email, senha, telefone
+- **Role**: `CLIENTE` (padrão)
 
 ### Acesso à API
 - **Servidor**: http://localhost:3000
@@ -78,12 +73,12 @@ npx ts-node src/database/seeds/create-admin.ts
 - **Logging**: LoggerService customizado
 
 ### **ESTRUTURA DE DADOS**
-- **UsuárioConta**: Clientes e administradores
+- **UsuárioConta**: Clientes do sistema bancário
 - **Cartao**: Cartões de débito e crédito
 - **Movimentacao**: Transações financeiras
 
 ### **ROLES DE USUÁRIO**
-- **admin**: Acesso total ao sistema
+- **CLIENTE**: Acesso às funcionalidades bancárias
 - **operador**: Acesso limitado (cliente comum)
 
 ## ENDPOINTS DA API
@@ -107,7 +102,7 @@ npx ts-node src/database/seeds/create-admin.ts
       "id": "uuid",
       "nomeCompleto": "string",
       "cpf": "string",
-      "role": "admin"
+      "papel": "CLIENTE"
     }
   }
   ```
@@ -232,28 +227,23 @@ npx ts-node src/database/seeds/create-admin.ts
 - **Resposta**: Dados da transação
 - **Status**: 200 (sucesso), 404 (não encontrado)
 
-### **5. FUNCIONALIDADES DE ADMIN**
+### **5. FUNCIONALIDADES PRINCIPAIS**
 
-#### **GET /admin/usuarios**
-- **Descrição**: Lista todos os usuários (apenas admin)
-- **Resposta**: Array de usuários
-- **Status**: 200 (sucesso), 403 (não autorizado)
+#### **Autenticação e Registro**
+- **POST /api/v1/auth/register**: Criar nova conta
+- **POST /api/v1/auth/login**: Fazer login
 
-#### **GET /admin/estatisticas**
-- **Descrição**: Estatísticas do sistema (apenas admin)
-- **Resposta**: Dados estatísticos
-- **Status**: 200 (sucesso), 403 (não autorizado)
+#### **Transações Financeiras**
+- **POST /api/v1/transacoes/deposito**: Realizar depósito
+- **POST /api/v1/transacoes/transferir**: Transferir valores
+- **POST /api/v1/transacoes/compra-credito**: Compra no crédito
+- **POST /api/v1/transacoes/pagar-fatura**: Pagar faturas
 
-#### **PATCH /admin/clientes/:id/limite**
-- **Descrição**: Atualiza limites do cliente (apenas admin)
-- **Body**:
-  ```json
-  {
-    "limiteCredito": 5000,
-    "limiteDebitoDiario": 15000
-  }
-  ```
-- **Status**: 200 (sucesso), 403 (não autorizado)
+#### **Consultas**
+- **GET /api/v1/transacoes/extrato**: Consultar extrato
+- **GET /api/v1/investimentos/resumo**: Ver investimentos
+- **GET /api/v1/cartoes/debito/:id**: Info cartão débito
+- **GET /api/v1/cartoes/credito/:id**: Info cartão crédito
 
 ## FLUXO CORRETO DE TESTE
 
@@ -328,7 +318,7 @@ curl -X POST http://localhost:3000/cartoes \
 5. **Consultar saldo** → Via GET /clientes/:id/saldo
 
 ### **Dados de Teste**
-- **Admin**: CPF 00000000000, Senha AdminSenhaForte123
+- **Usuários**: Criados via endpoint de registro
 - **Cliente Teste**: CPF 12345678901, Senha Senha123
 - **Cartão Débito**: Criado automaticamente (Mastercard)
-- **Cartão Crédito**: Solicitado via API (Visa/Mastercard) 
+- **Cartão Crédito**: Solicitado via API (Visa/Mastercard)

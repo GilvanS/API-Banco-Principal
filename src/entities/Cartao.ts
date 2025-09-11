@@ -5,11 +5,14 @@ import { UsuarioConta } from "./UsuarioConta";
 export enum TipoCartao {
     DEBITO = "debito",
     CREDITO = "credito",
+    MULTIPLO = "multiplo", // Cartão que funciona como débito + crédito
 }
 
 export enum StatusCartao {
     ATIVO = "ativo",
     BLOQUEADO = "bloqueado",
+    CANCELADO = "cancelado", // Para cartões substituídos
+    INATIVO = "inativo",
 }
 
 export enum TitularidadeCartao {
@@ -126,6 +129,28 @@ export class Cartao {
     })
     permiteSaque!: boolean;
 
+    @Column({
+        type: 'varchar',
+        length: 50,
+        nullable: true
+    })
+    motivoSubstituicao?: string; // 'perda', 'roubo', 'danificacao', etc.
+
+    @Column({
+        type: 'uuid',
+        nullable: true
+    })
+    cartaoAnteriorId?: string; // ID do cartão que foi substituído
+
+    @Column({
+        type: 'boolean',
+        default: false
+    })
+    ehSegundaVia!: boolean; // Indica se é uma segunda via
+
     @CreateDateColumn()
     dataCriacao!: Date;
+
+    @Column({ type: 'datetime', nullable: true })
+    dataSubstituicao?: Date; // Data em que foi substituído
 }

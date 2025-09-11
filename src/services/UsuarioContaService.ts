@@ -17,6 +17,7 @@ export class UsuarioContaService {
         tipoConta?: TipoConta;
         agencia?: string;
         numeroConta?: string;
+        bandeira?: 'V' | 'M';
     }) {
         try {
             // 1. Verificar se CPF já existe
@@ -49,8 +50,8 @@ export class UsuarioContaService {
 
             await this.repository.save(cliente);
 
-            // 5. Criar cartões iniciais (débito Master e crédito Visa)
-            await this.criarCartoesIniciais(cliente);
+            // 5. Criar cartões iniciais (débito + crédito com bandeira selecionada)
+            await this.criarCartoesIniciais(cliente, dados.bandeira);
 
             LoggerService.info("Cliente criado com sucesso", { 
                 id: cliente.id, 
@@ -164,43 +165,35 @@ export class UsuarioContaService {
         return Math.random().toString().slice(2, 10);
     }
 
-    private static async criarCartoesIniciais(usuario: UsuarioConta) {
+    private static async criarCartoesIniciais(usuario: UsuarioConta, bandeiraSelecionada?: 'V' | 'M') {
         try {
-            // Criar cartão de débito Master
-            const cartaoDebito = this.cartaoRepository.create({
+            // Determinar bandeira: V=Visa, M=Mastercard, padrão=Mastercard
+            const bandeira = bandeiraSelecionada === 'V' ? BandeiraCartao.VISA : BandeiraCartao.MASTERCARD;
+            
+            // Criar cartão múltiplo (débito + crédito)
+            const cartaoMultiplo = this.cartaoRepository.create({
                 usuarioConta: usuario,
-                tipo: TipoCartao.DEBITO,
-                bandeira: BandeiraCartao.MASTERCARD,
+                tipo: TipoCartao.MULTIPLO, // Cartão múltiplo (débito + crédito)
+                bandeira: bandeira,
                 titularidade: TitularidadeCartao.TITULAR,
-                numero: this.gerarNumeroCartao(BandeiraCartao.MASTERCARD),
+                numero: this.gerarNumeroCartao(bandeira),
                 cvv: this.gerarCVV(),
                 dataValidade: this.gerarDataValidade(),
-                pin: await bcrypt.hash("1234", 10) // PIN padrão
+                pin: await bcrypt.hash("1234", 10), // PIN padrão
+                limite: 1000.00, // Limite de crédito disponível
+                ehSegundaVia: false // Cartão inicial não é segunda via
             });
 
-            await this.cartaoRepository.save(cartaoDebito);
+            await this.cartaoRepository.save(cartaoMultiplo);
 
-            // Criar cartão de crédito Visa
-            const cartaoCredito = this.cartaoRepository.create({
-                usuarioConta: usuario,
-                tipo: TipoCartao.CREDITO,
-                bandeira: BandeiraCartao.VISA,
-                titularidade: TitularidadeCartao.TITULAR,
-                numero: this.gerarNumeroCartao(BandeiraCartao.VISA),
-                cvv: this.gerarCVV(),
-                dataValidade: this.gerarDataValidade(),
-                limite: 1000.00 // Limite inicial
-            });
-
-            await this.cartaoRepository.save(cartaoCredito);
-
-            LoggerService.info("Cartões iniciais criados", { 
+            LoggerService.info("Cartão múltiplo criado", { 
                 usuarioId: usuario.id,
-                cartaoDebitoId: cartaoDebito.id,
-                cartaoCreditoId: cartaoCredito.id
+                cartaoId: cartaoMultiplo.id,
+                bandeira: bandeira,
+                tipo: "MULTIPLO (Débito + Crédito)"
             });
         } catch (error) {
-            LoggerService.error("Erro ao criar cartões iniciais", error);
+            LoggerService.error("Erro ao criar cartão múltiplo", error);
             throw error;
         }
     }

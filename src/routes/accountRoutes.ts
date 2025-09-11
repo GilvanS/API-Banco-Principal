@@ -131,8 +131,8 @@ router.get('/statement', authMiddleware, async (req, res) => {
         transactions,
         pagination: {
           currentPage: Number(page),
-          totalPages: Math.ceil(extrato.total / Number(limit)),
-          totalTransactions: extrato.total,
+          totalPages: Math.ceil(extrato.paginacao.total / Number(limit)),
+          totalTransactions: extrato.paginacao.total,
           limit: Number(limit)
         }
       }

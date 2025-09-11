@@ -27,8 +27,8 @@ router.get('/limite', authMiddleware, async (req, res) => {
     }
 
     // Separar cartões por tipo
-    const cartaoCredito = cartoes.find(c => c.tipo === TipoCartao.CREDITO && c.ativo);
-    const cartaoDebito = cartoes.find(c => c.tipo === TipoCartao.DEBITO && c.ativo);
+    const cartaoCredito = cartoes.find((c: any) => c.tipo === TipoCartao.CREDITO && c.ativo);
+    const cartaoDebito = cartoes.find((c: any) => c.tipo === TipoCartao.DEBITO && c.ativo);
 
     const response: any = {
       usuario: {
@@ -103,7 +103,7 @@ router.get('/limite/:cartaoId', authMiddleware, async (req, res) => {
 
     // Buscar cartão específico
     const cartoes = await CartaoService.buscarCartoesUsuario(userId);
-    const cartao = cartoes.find(c => c.id === cartaoId);
+    const cartao = cartoes.find((c: any) => c.id === cartaoId);
     
     if (!cartao) {
       return res.status(404).json({ error: 'Cartão não encontrado' });

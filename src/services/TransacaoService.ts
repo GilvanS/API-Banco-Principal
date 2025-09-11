@@ -21,6 +21,7 @@ export class TransacaoService {
         nomeDestino: string;
         cpfDestino: string;
         valor: number;
+        idempotencyKey?: string;
     }) {
         const queryRunner = AppDataSource.createQueryRunner();
         await queryRunner.connect();
@@ -90,7 +91,8 @@ export class TransacaoService {
                 contaOrigem: dados.contaOrigem,
                 agenciaDestino: dados.agenciaDestino,
                 contaDestino: dados.contaDestino,
-                usuarioConta: contaOrigem
+                usuarioConta: contaOrigem,
+                idempotencyKey: dados.idempotencyKey
             });
 
             const movimentacaoRecebida = this.repository.create({
@@ -101,7 +103,8 @@ export class TransacaoService {
                 contaOrigem: dados.contaOrigem,
                 agenciaDestino: dados.agenciaDestino,
                 contaDestino: dados.contaDestino,
-                usuarioConta: contaDestino
+                usuarioConta: contaDestino,
+                idempotencyKey: dados.idempotencyKey
             });
 
             await queryRunner.manager.save(Movimentacao, movimentacaoEnviada);
@@ -146,6 +149,7 @@ export class TransacaoService {
         pixDestino: string;
         tipoPix: "cpf" | "email";
         valor: number;
+        idempotencyKey?: string;
     }) {
         const queryRunner = AppDataSource.createQueryRunner();
         await queryRunner.connect();
@@ -222,7 +226,8 @@ export class TransacaoService {
                 contaOrigem: contaOrigem.numeroConta,
                 agenciaDestino: contaDestino.agencia,
                 contaDestino: contaDestino.numeroConta,
-                usuarioConta: contaOrigem
+                usuarioConta: contaOrigem,
+                idempotencyKey: dados.idempotencyKey
             });
 
             const movimentacaoRecebida = this.repository.create({
@@ -233,7 +238,8 @@ export class TransacaoService {
                 contaOrigem: contaOrigem.numeroConta,
                 agenciaDestino: contaDestino.agencia,
                 contaDestino: contaDestino.numeroConta,
-                usuarioConta: contaDestino
+                usuarioConta: contaDestino,
+                idempotencyKey: dados.idempotencyKey
             });
 
             await queryRunner.manager.save(Movimentacao, movimentacaoEnviada);
@@ -273,6 +279,7 @@ export class TransacaoService {
         pin: string;
         valor: number;
         estabelecimento: string;
+        idempotencyKey?: string;
     }) {
         const queryRunner = AppDataSource.createQueryRunner();
         await queryRunner.connect();
@@ -314,7 +321,8 @@ export class TransacaoService {
                 tipo: "pagamento_debito",
                 valor: dados.valor,
                 descricao: `Pagamento com cartão de débito ${dados.numeroCartao} no estabelecimento: ${dados.estabelecimento}`,
-                usuarioConta: usuario
+                usuarioConta: usuario,
+                idempotencyKey: dados.idempotencyKey
             });
 
             await queryRunner.manager.save(Movimentacao, movimentacao);
@@ -351,6 +359,7 @@ export class TransacaoService {
         numeroCartao: string;
         valor: number;
         estabelecimento: string;
+        idempotencyKey?: string;
     }) {
         try {
             // 1. Buscar cartão por número
@@ -378,7 +387,8 @@ export class TransacaoService {
                 tipo: "compra_credito",
                 valor: dados.valor,
                 descricao: `Compra com cartão de crédito ${dados.numeroCartao} no estabelecimento: ${dados.estabelecimento}`,
-                usuarioConta: usuario
+                usuarioConta: usuario,
+                idempotencyKey: dados.idempotencyKey
             });
 
             await this.repository.save(movimentacao);
@@ -410,6 +420,7 @@ export class TransacaoService {
         agencia: string;
         conta: string;
         valor: number;
+        idempotencyKey?: string;
     }) {
         try {
             // 1. Validar valor do depósito
@@ -442,7 +453,8 @@ export class TransacaoService {
                 descricao: `Depósito realizado na conta ${dados.agencia}/${dados.conta}`,
                 agenciaDestino: dados.agencia,
                 contaDestino: dados.conta,
-                usuarioConta: conta
+                usuarioConta: conta,
+                idempotencyKey: dados.idempotencyKey
             });
 
             await this.repository.save(movimentacao);
@@ -473,6 +485,7 @@ export class TransacaoService {
     static async pagarFatura(dados: {
         usuarioId: string;
         valor: number;
+        idempotencyKey?: string;
     }) {
         try {
             // 1. Validar valor do pagamento
@@ -512,7 +525,8 @@ export class TransacaoService {
                 tipo: "pagamento_fatura",
                 valor: valorAPagar,
                 descricao: `Pagamento de fatura do cartão de crédito`,
-                usuarioConta: usuario
+                usuarioConta: usuario,
+                idempotencyKey: dados.idempotencyKey
             });
 
             await this.repository.save(movimentacao);

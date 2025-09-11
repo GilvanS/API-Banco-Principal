@@ -1,1783 +1,700 @@
 openapi: 3.0.0
 info:
-  title: API NuvemBank
+  title: API Banco Principal
   description: |
-    API enxuta e focada na aquisição de novos clientes e geração de massa de dados para o projeto NuvemBank.
+    API REST completa para sistema bancário digital moderno.
     
-    ## Foco
-    - Criação de cliente
-    - Login
-    - Movimentação de conta
-    - Consulta de dados
+    Esta API oferece funcionalidades essenciais para operações bancárias, incluindo:
+    - Gerenciamento de contas de usuário
+    - Cartões de crédito e débito
+    - Transações financeiras (depósitos, transferências, compras)
+    - Investimentos e rentabilidade
+    - Extratos e relatórios
     
-    ## 🚀 Integração com Postman
+    ## Autenticação
+    A API utiliza JWT (JSON Web Tokens) para autenticação. Após o login, inclua o token no header:
+    ```
+    Authorization: Bearer <seu-token-jwt>
+    ```
     
-    Esta API inclui uma **Collection Postman completa** com automação avançada:
-    
-    ### ✅ Autenticação Automática
-    - **Token JWT salvo automaticamente** no environment após login
-    - **Renovação automática** quando o token expira
-    - **Scripts de pre-request** que garantem autenticação transparente
-    - **Variáveis de environment** atualizadas automaticamente
-    
-    ### 📋 Variáveis Automáticas
-    - `authToken`: Token JWT para todas as requisições
-    - `userId`: ID do usuário logado
-    - `tokenExpiry`: Controle de expiração do token
-    - `clienteId`, `cartaoId`: IDs salvos automaticamente após criação
-    
-    ### 🔧 Como Usar
-    1. Importe `API-Banco-Principal.postman_collection.json`
-    2. Importe `API Banco Principal - Environment.postman_environment.json`
-    3. Selecione o environment "API Banco Principal - Environment"
-    4. Execute qualquer requisição - o login será feito automaticamente!
-    
-    **Não é necessário fazer login manual** - tudo é automatizado via scripts!
-  version: 1.0.0
+    ## Códigos de Status
+    - `200` - Sucesso
+    - `201` - Criado com sucesso
+    - `400` - Erro de validação
+    - `401` - Não autorizado
+    - `404` - Recurso não encontrado
+    - `500` - Erro interno do servidor
+  version: 2.0.0
   contact:
-    name: Equipe NuvemBank
-    email: suporte@nuvembank.com
+    name: Suporte API Banco Principal
+    email: suporte@bancoprincipal.com
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
+
 servers:
-  - url: http://localhost:3000/api/v1
-    description: Servidor de Desenvolvimento
+  - url: http://localhost:3000
+    description: Servidor de desenvolvimento
+  - url: https://api.bancoprincipal.com
+    description: Servidor de produção
+
+paths:
+  /health:
+    get:
+      tags:
+        - Sistema
+      summary: Verificação de saúde da API
+      description: Endpoint para verificar se a API está funcionando corretamente
+      responses:
+        '200':
+          description: API funcionando normalmente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime:
+                    type: number
+
+  /api/v1/auth/register:
+    post:
+      tags:
+        - Autenticação
+      summary: Registrar novo usuário
+      description: Cria uma nova conta de usuário no sistema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreatedResponse'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Login do usuário
+      description: Autentica o usuário e retorna um token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/account/profile:
+    get:
+      tags:
+        - Conta
+      summary: Dados do perfil do usuário
+      description: Retorna informações da conta do usuário logado
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dados do perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Token inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/account/statement:
+    get:
+      tags:
+        - Conta
+      summary: Extrato da conta
+      description: Retorna o extrato detalhado da conta com filtros opcionais
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          description: Data inicial (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: Data final (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: transactionType
+          in: query
+          description: Tipo de transação
+          schema:
+            type: string
+            enum: [ALL, DEPOSIT, TRANSFER, CREDIT_PURCHASE, BILL_PAYMENT]
+      responses:
+        '200':
+          description: Extrato da conta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountStatement'
+
+  /api/v1/cards:
+    get:
+      tags:
+        - Cartões
+      summary: Lista cartões do usuário
+      description: Retorna todos os cartões associados ao usuário
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de cartões
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardsResponse'
+
+  /api/v1/cards/request:
+    post:
+      tags:
+        - Cartões
+      summary: Solicitar cartão de crédito
+      description: Solicita um novo cartão de crédito para o usuário
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardRequest'
+      responses:
+        '201':
+          description: Cartão solicitado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardCreatedResponse'
+
+  /api/v1/transactions/deposit:
+    post:
+      tags:
+        - Transações
+      summary: Depósito em conta
+      description: Realiza um depósito na conta do usuário
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositRequest'
+      responses:
+        '201':
+          description: Depósito realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /api/v1/transactions/transfer:
+    post:
+      tags:
+        - Transações
+      summary: Transferência entre contas
+      description: Realiza transferência para outra conta
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '201':
+          description: Transferência realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /api/v1/transactions/credit-purchase:
+    post:
+      tags:
+        - Transações
+      summary: Compra no cartão de crédito
+      description: Realiza uma compra utilizando o cartão de crédito
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditPurchaseRequest'
+      responses:
+        '201':
+          description: Compra realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /api/v1/transactions/pay-bill:
+    post:
+      tags:
+        - Transações
+      summary: Pagamento de faturas
+      description: Realiza o pagamento de faturas (cartão de crédito, financiamentos, etc.)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillPaymentRequest'
+      responses:
+        '201':
+          description: Pagamento realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /api/v1/investments/summary:
+    get:
+      tags:
+        - Investimentos
+      summary: Resumo de investimentos
+      description: Retorna o resumo dos investimentos e rentabilidade do usuário
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Resumo de investimentos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentSummary'
 
 components:
   securitySchemes:
-    bearerAuth:
+    BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: |
-        **Autenticação JWT Automática**
-        
-        O sistema utiliza tokens JWT para autenticação. Com a Collection Postman fornecida:
-        
-        ✅ **Processo Automatizado:**
-        1. Faça login via `/auth/login` - token é salvo automaticamente
-        2. Todas as requisições subsequentes usam o token automaticamente
-        3. Token é renovado automaticamente quando expira
-        
-        ✅ **Variáveis de Environment:**
-        - `authToken`: Token JWT (salvo automaticamente)
-        - `userId`: ID do usuário autenticado
-        
-        ✅ **Headers Automáticos:**
-        ```
-        Authorization: Bearer {{authToken}}
-        ```
-        
-        **Não é necessário configurar headers manualmente** - tudo é automatizado!
+
   schemas:
-    Cartao:
+    UserRegistration:
       type: object
+      required:
+        - nomeCompleto
+        - cpf
+        - email
+        - senha
+        - telefone
       properties:
-        id:
-          type: string
-          format: uuid
-          example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
-        tipo:
-          type: string
-          enum: [debito, credito]
-          example: "credito"
-        titularidade:
-          type: string
-          enum: [titular, adicional]
-          example: "titular"
-        bandeira:
-          type: string
-          enum: [master, mastercard, visa, elo, amex]
-          example: "visa"
-        numero:
-          type: string
-          example: "428460675172344"
-        cvv:
-          type: string
-          example: "438"
-        dataValidade:
-          type: string
-          example: "08/30"
-        status:
-          type: string
-          enum: [ativo, bloqueado]
-          example: "ativo"
-        limite:
-          type: number
-          format: float
-          nullable: true
-          example: 1500
-        pin:
-          type: string
-          nullable: true
-          example: null
-        dataCriacao:
-          type: string
-          format: date-time
-          example: "2025-08-02T17:41:15.000Z"
-        usuarioConta:
-          $ref: '#/components/schemas/UsuarioConta'
-    UsuarioConta:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          example: "0b4fe053-84c3-4524-92e9-2555bd24b353"
         nomeCompleto:
           type: string
-          example: "João Silva Teste"
+          example: "João Silva Santos"
+        cpf:
+          type: string
+          pattern: '^[0-9]{11}$'
+          example: "12345678901"
+        email:
+          type: string
+          format: email
+          example: "joao.silva@email.com"
+        senha:
+          type: string
+          minLength: 8
+          example: "MinhaSenh@123"
+        telefone:
+          type: string
+          example: "11987654321"
+        endereco:
+          type: object
+          properties:
+            rua:
+              type: string
+              example: "Rua das Flores, 123"
+            cidade:
+              type: string
+              example: "São Paulo"
+            estado:
+              type: string
+              example: "SP"
+            cep:
+              type: string
+              example: "01234-567"
+
+    LoginRequest:
+      type: object
+      required:
+        - cpf
+        - senha
+      properties:
         cpf:
           type: string
           example: "12345678901"
+        senha:
+          type: string
+          example: "MinhaSenh@123"
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        usuario:
+          $ref: '#/components/schemas/UserProfile'
+
+    UserCreatedResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Usuário criado com sucesso"
+        usuario:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "uuid-123"
+            nomeCompleto:
+              type: string
+              example: "João Silva Santos"
+            agencia:
+              type: string
+              example: "0001"
+            numeroConta:
+              type: string
+              example: "123456"
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        nomeCompleto:
+          type: string
+        cpf:
+          type: string
+        email:
+          type: string
         agencia:
           type: string
-          example: "0001"
         numeroConta:
           type: string
-          example: "37688147"
-        limiteCredito:
-          type: number
-          format: float
-          description: "Limite de crédito total da conta."
-          example: 1000
-        creditoUtilizado:
-          type: number
-          format: float
-          description: "Crédito utilizado da conta."
-          example: 0
         saldo:
           type: number
           format: float
-          description: "Saldo atual da conta."
-          example: 200
-        ativo:
-          type: boolean
-          description: "Indica se a conta está ativa."
-          example: true
-        contaBloqueada:
-          type: boolean
-          example: false
         limiteDebitoDiario:
           type: number
           format: float
-          description: "Limite de débito diário da conta."
-          example: 5000
-        dataCriacao:
-          type: string
-          format: date-time
-          example: "2025-08-02T17:41:14.000Z"
-        dataAtualizacao:
-          type: string
-          format: date-time
-          example: "2025-08-02T17:41:14.000Z"
-        telefone:
-          type: string
-          example: "11999999999"
-        email:
-          type: string
-          example: "usuario@email.com"
-        dataNascimento:
-          type: string
-          format: date
-          example: "1990-01-01"
-        endereco:
-          type: string
-          example: "Rua das Flores, 123"
-        notificacoesPush:
-          type: boolean
-          example: true
-        notificacoesEmail:
-          type: boolean
-          example: true
-        notificacoesSms:
-          type: boolean
-          example: false
-        cartoes:
+        limiteCreditoDiario:
+          type: number
+          format: float
+
+    AccountStatement:
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/UserProfile'
+        statement:
           type: array
           items:
-            $ref: '#/components/schemas/Cartao'
-        investimentos:
-          type: array
-          items:
-            $ref: '#/components/schemas/Investment'
-    Investment:
+            $ref: '#/components/schemas/Transaction'
+        summary:
+          type: object
+          properties:
+            totalEntradas:
+              type: number
+              format: float
+            totalSaidas:
+              type: number
+              format: float
+            saldoInicial:
+              type: number
+              format: float
+            saldoFinal:
+              type: number
+              format: float
+
+    Transaction:
       type: object
       properties:
         id:
           type: string
-          format: uuid
-          example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
-          description: "ID único do investimento"
         tipo:
           type: string
-          enum: [POUPANCA, CDB, LCI, LCA, TESOURO_DIRETO, FUNDOS]
-          example: "POUPANCA"
-          description: "Tipo do investimento"
-        nome:
-          type: string
-          example: "Poupança Teste"
-          description: "Nome personalizado do investimento"
-        descricao:
-          type: string
-          nullable: true
-          example: "Investimento de teste"
-          description: "Descrição opcional do investimento"
-        valorInvestido:
-          type: number
-          format: float
-          example: 500.00
-          description: "Valor investido inicialmente"
-        valorAtual:
-          type: number
-          format: float
-          example: 525.13
-          description: "Valor atual do investimento com rendimentos"
-        taxaRetorno:
-          type: number
-          format: float
-          example: 0.5
-          description: "Taxa de retorno anual (%)"
-        dataVencimento:
-          type: string
-          format: date
-          example: "2026-09-10"
-          description: "Data de vencimento do investimento"
-        status:
-          type: string
-          enum: [ATIVO, VENCIDO, RESGATADO]
-          example: "ATIVO"
-          description: "Status atual do investimento"
-        podeResgatar:
-          type: boolean
-          example: true
-          description: "Indica se o investimento permite resgate antecipado"
-        dataAplicacao:
-          type: string
-          format: date-time
-          example: "2025-09-11T01:43:53.000Z"
-          description: "Data e hora da aplicação"
-        dataAtualizacao:
-          type: string
-          format: date-time
-          example: "2025-09-11T01:43:53.000Z"
-          description: "Data da última atualização"
-        usuarioContaId:
-          type: string
-          format: uuid
-          example: "0b4fe053-84c3-4524-92e9-2555bd24b353"
-          description: "ID do usuário proprietário do investimento"
-    InvestmentYield:
-      type: object
-      description: "Informações detalhadas de rendimento de um investimento"
-      properties:
-        investmentId:
-          type: string
-          format: uuid
-          example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
-        name:
-          type: string
-          example: "Poupança Teste"
-        type:
-          type: string
-          example: "POUPANCA"
-        status:
-          type: string
-          example: "ATIVO"
-        investedAmount:
-          type: number
-          format: float
-          example: 500.00
-          description: "Valor investido inicialmente"
-        currentValue:
-          type: number
-          format: float
-          example: 525.13
-          description: "Valor atual do investimento"
-        yield:
-          $ref: '#/components/schemas/YieldDetails'
-        period:
-          $ref: '#/components/schemas/InvestmentPeriod'
-        rates:
-          $ref: '#/components/schemas/InvestmentRates'
-        canRedeem:
-          type: boolean
-          example: true
-        description:
-          type: string
-          nullable: true
-          example: "Investimento de teste"
-    YieldDetails:
-      type: object
-      description: "Detalhes de rendimento do investimento"
-      properties:
-        absolute:
-          type: number
-          format: float
-          example: 25.13
-          description: "Rendimento absoluto em reais"
-        percentage:
-          type: number
-          format: float
-          example: 5.03
-          description: "Rendimento percentual"
-        dailyAverage:
-          type: number
-          format: float
-          example: 0.84
-          description: "Rendimento diário médio em reais"
-        monthlyProjected:
-          type: number
-          format: float
-          example: 25.20
-          description: "Rendimento mensal projetado em reais"
-        annualProjected:
-          type: number
-          format: float
-          example: 306.60
-          description: "Rendimento anual projetado em reais"
-    InvestmentPeriod:
-      type: object
-      description: "Informações de período do investimento"
-      properties:
-        investmentDate:
-          type: string
-          format: date-time
-          example: "2025-09-11T01:43:53.000Z"
-          description: "Data da aplicação"
-        daysInvested:
-          type: integer
-          example: 30
-          description: "Dias desde a aplicação"
-        maturityDate:
-          type: string
-          format: date
-          example: "2026-09-10"
-          description: "Data de vencimento"
-    InvestmentRates:
-      type: object
-      description: "Taxas e rendimentos do investimento"
-      properties:
-        returnRate:
-          type: number
-          format: float
-          example: 0.5
-          description: "Taxa de retorno anual (%)"
-        currentYield:
-          type: number
-          format: float
-          example: 5.03
-          description: "Rendimento atual (%)"
-    InvestmentSummary:
-      type: object
-      description: "Resumo completo dos investimentos do usuário"
-      properties:
-        totalInvested:
-          type: number
-          format: float
-          example: 5000.00
-          description: "Valor total investido"
-        currentValue:
-          type: number
-          format: float
-          example: 5250.75
-          description: "Valor atual de todos os investimentos"
-        totalReturn:
-          type: number
-          format: float
-          example: 250.75
-          description: "Rendimento total absoluto"
-        returnPercentage:
-          type: number
-          format: float
-          example: 5.02
-          description: "Percentual de rentabilidade total"
-        activeInvestments:
-          type: integer
-          example: 3
-          description: "Quantidade de investimentos ativos"
-        byType:
-          type: array
-          description: "Investimentos agrupados por tipo"
-          items:
-            $ref: '#/components/schemas/InvestmentByType'
-        recentInvestments:
-          type: array
-          description: "Investimentos mais recentes"
-          items:
-            $ref: '#/components/schemas/RecentInvestment'
-    InvestmentByType:
-      type: object
-      description: "Agrupamento de investimentos por tipo"
-      properties:
-        tipo:
-          type: string
-          example: "POUPANCA"
-        quantidade:
-          type: integer
-          example: 1
-        valorInvestido:
-          type: number
-          format: float
-          example: 1000.00
-        valorAtual:
-          type: number
-          format: float
-          example: 1050.25
-        rentabilidade:
-          type: number
-          format: float
-          example: 5.03
-    RecentInvestment:
-      type: object
-      description: "Investimento recente resumido"
-      properties:
-        id:
-          type: string
-          format: uuid
-          example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
-        name:
-          type: string
-          example: "Poupança Teste"
-        type:
-          type: string
-          example: "POUPANCA"
-        investedAmount:
-          type: number
-          format: float
-          example: 500.00
-        currentValue:
-          type: number
-          format: float
-          example: 525.13
-        returnPercentage:
-          type: number
-          format: float
-          example: 5.03
-        status:
-          type: string
-          example: "ATIVO"
-        createdAt:
-          type: string
-          format: date-time
-          example: "2025-09-11T01:43:53.000Z"
-    InvestmentApplication:
-      type: object
-      description: "Dados para aplicação em investimento"
-      required: [tipo, valor, nome]
-      properties:
-        tipo:
-          type: string
-          enum: [POUPANCA, CDB, LCI, LCA, TESOURO_DIRETO, FUNDOS]
-          example: "POUPANCA"
-          description: "Tipo do investimento"
+          enum: [DEPOSIT, TRANSFER, CREDIT_PURCHASE, BILL_PAYMENT]
         valor:
           type: number
           format: float
-          minimum: 1
-          example: 500.00
-          description: "Valor a ser investido (mínimo R$ 1,00)"
-        nome:
-          type: string
-          example: "Poupança Teste"
-          description: "Nome personalizado para o investimento"
         descricao:
           type: string
-          example: "Investimento de teste"
-          description: "Descrição opcional do investimento"
-    InvestmentRedemption:
+        dataTransacao:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED]
+
+    CardsResponse:
       type: object
-      description: "Dados para resgate de investimento"
-      required: [amount]
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Card'
+
+    Card:
+      type: object
+      properties:
+        id:
+          type: string
+        numeroCartao:
+          type: string
+          example: "****-****-****-1234"
+        tipoCartao:
+          type: string
+          enum: [DEBITO, CREDITO]
+        limiteCredito:
+          type: number
+          format: float
+        creditoUtilizado:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [ATIVO, BLOQUEADO, CANCELADO]
+
+    CardRequest:
+      type: object
+      required:
+        - tipoCartao
+        - limiteCredito
+      properties:
+        tipoCartao:
+          type: string
+          enum: [CREDITO]
+        limiteCredito:
+          type: number
+          format: float
+          example: 5000.00
+
+    CardCreatedResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Cartão solicitado com sucesso"
+        cartao:
+          $ref: '#/components/schemas/Card'
+
+    DepositRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 500.00
+        description:
+          type: string
+          example: "Depósito via transferência"
+
+    TransferRequest:
+      type: object
+      required:
+        - amount
+        - destinationAccount
+        - destinationAgency
+        - destinationName
       properties:
         amount:
           type: number
           format: float
           minimum: 0.01
           example: 200.00
-          description: "Valor a ser resgatado (deve ser maior que zero)"
-    SaldoResponse:
+        destinationAccount:
+          type: string
+          example: "654321"
+        destinationAgency:
+          type: string
+          example: "0002"
+        destinationName:
+          type: string
+          example: "Maria Santos"
+        description:
+          type: string
+          example: "Transferência PIX"
+
+    CreditPurchaseRequest:
+      type: object
+      required:
+        - amount
+        - merchant
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 150.00
+        merchant:
+          type: string
+          example: "Supermercado ABC"
+        description:
+          type: string
+          example: "Compra de produtos"
+
+    BillPaymentRequest:
+      type: object
+      required:
+        - amount
+        - billType
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 300.00
+        billType:
+          type: string
+          enum: [CREDIT_CARD, FINANCING, UTILITIES, INSURANCE]
+          example: "CREDIT_CARD"
+        description:
+          type: string
+          example: "Pagamento de fatura do cartão"
+
+    TransactionResponse:
       type: object
       properties:
-        saldo:
+        transactionId:
+          type: string
+          example: "txn-uuid-123"
+        type:
+          type: string
+          enum: [DEPOSIT, TRANSFER, CREDIT_PURCHASE, BILL_PAYMENT]
+        amount:
           type: number
           format: float
-          example: 200
-        limiteCredito:
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED]
+        timestamp:
+          type: string
+          format: date-time
+        description:
+          type: string
+
+    InvestmentSummary:
+      type: object
+      properties:
+        totalInvestido:
           type: number
           format: float
-          example: 1000
-        creditoUtilizado:
+          example: 10000.00
+        totalAtual:
           type: number
           format: float
-          example: 0
-        creditoDisponivel:
+          example: 10500.00
+        rentabilidadeTotal:
           type: number
           format: float
-          example: 1000
-    Movimentacao:
+          example: 5.0
+        investments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Investment'
+
+    Investment:
       type: object
       properties:
         id:
           type: string
-          format: uuid
-          example: "e8ffcb17-aa14-4830-8e31-3ca7199391fe"
-        tipo:
+        tipoInvestimento:
           type: string
-          enum: [deposito, saque, transferencia_enviada, transferencia_recebida, pix_enviado, pix_recebido, pagamento_cartao, investimento, rendimento, taxa, estorno]
-          example: "transferencia_enviada"
-        valor:
+          enum: [CDB, POUPANCA, TESOURO_DIRETO, FUNDOS]
+        valorInvestido:
           type: number
           format: float
-          example: 50
-        descricao:
-          type: string
-          example: "Transferência enviada para Maria Silva (0001/12345678)"
-        nomeDestinatario:
-          type: string
-          example: "Maria Silva"
-        chavePix:
-          type: string
-          example: "11999999999"
-        status:
-          type: string
-          enum: [pendente, concluida, cancelada, falhada]
-          example: "conclida"
-        taxa:
+        valorAtual:
           type: number
           format: float
-          example: 0
-        observacoes:
-          type: string
-          example: "Observações adicionais"
-        agenciaOrigem:
-          type: string
-          example: "0001"
-        contaOrigem:
-          type: string
-          example: "87654321"
-        agenciaDestino:
-          type: string
-          example: "0001"
-        contaDestino:
-          type: string
-          example: "12345678"
-        estabelecimento:
-          type: string
-          example: "Loja Exemplo"
-        data:
+        rentabilidade:
+          type: number
+          format: float
+        dataCriacao:
           type: string
           format: date-time
-          example: "2025-08-02T17:41:17.000Z"
-        usuarioConta:
-          $ref: '#/components/schemas/UsuarioConta'
-    ExtratoResponse:
-      type: object
-      properties:
-        movimentacoes:
-          type: array
-          items:
-            $ref: '#/components/schemas/Movimentacao'
-        paginacao:
-          type: object
-          properties:
-            pagina:
-              type: integer
-              example: 1
-            limite:
-              type: integer
-              example: 10
-            total:
-              type: integer
-              example: 2
-            totalPaginas:
-              type: integer
-              example: 1
-    TransferenciaResponse:
-      type: object
-      properties:
-        mensagem:
-          type: string
-          example: "Transferência realizada com sucesso"
-        dados:
-          type: object
-          properties:
-            agenciaOrigem:
-              type: string
-              example: "0001"
-            contaOrigem:
-              type: string
-              example: "87654321"
-            agenciaDestino:
-              type: string
-              example: "0001"
-            contaDestino:
-              type: string
-              example: "12345678"
-            valor:
-              type: number
-              format: float
-              example: 100.00
-            data:
-              type: string
-              format: date-time
-              example: "2025-08-02T17:41:17.000Z"
-    DepositoResponse:
-      type: object
-      properties:
-        mensagem:
-          type: string
-          example: "Depósito realizado com sucesso"
-        dados:
-          type: object
-          properties:
-            agencia:
-              type: string
-              example: "0001"
-            conta:
-              type: string
-              example: "12345678"
-            valor:
-              type: number
-              format: float
-              example: 500.00
-            saldoAtual:
-              type: number
-              format: float
-              example: 700.00
-            data:
-              type: string
-              format: date-time
-              example: "2025-08-02T17:41:17.000Z"
-    ApiError:
-      type: object
-      properties:
-        erro:
-          type: string
-          description: "Mensagem de erro"
-          example: "Valor mínimo para transferência é R$ 10,00"
-    SuccessResponse:
-      type: object
-      properties:
-        mensagem:
-          type: string
-          description: "Mensagem de sucesso"
-          example: "Compra realizada com sucesso"
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Mensagem de erro"
+        message:
+          type: string
+          example: "Descrição detalhada do erro"
+        statusCode:
+          type: integer
+          example: 400
+        timestamp:
+          type: string
+          format: date-time
 
 tags:
-  - name: "Autenticação"
-    description: "Operações de login e autenticação."
-  - name: "Clientes"
-    description: "Operações de gestão de clientes."
-  - name: "Cartões"
-    description: "Operações de gestão de cartões."
-  - name: "Transações"
-    description: "Operações financeiras e transações."
-  - name: "Contas"
-    description: "Operações de gestão de contas bancárias."
-  - name: "Configurações"
-    description: "Configurações de usuário."
-  - name: "Investimentos"
-    description: "Operações de investimentos e poupança."
-
-paths:
-  /auth/login:
-    post:
-      tags: ["Autenticação"]
-      summary: "Autentica um usuário e retorna um token JWT."
-      description: |
-        Endpoint de autenticação que valida as credenciais do usuário e retorna um token JWT para acesso aos recursos protegidos da API.
-        
-        ## 🔧 Integração com Postman
-        
-        **Salvamento Automático do Token:**
-        - ✅ O token JWT é **automaticamente salvo** na variável `authToken` do environment
-        - ✅ Dados do usuário são salvos nas variáveis `userId` e `tokenExpiry`
-        - ✅ **Login automático** quando o token expira (via script de pre-request)
-        - ✅ Todas as requisições subsequentes usam automaticamente o token salvo
-        
-        **Variáveis do Environment atualizadas automaticamente:**
-        - `authToken`: Token JWT para autenticação
-        - `userId`: ID do usuário logado
-        - `tokenExpiry`: Data de expiração do token
-        
-        **Scripts Postman incluídos:**
-        - **Pre-request Script**: Verifica validade do token e faz login automático se necessário
-        - **Test Script**: Salva automaticamente o token e dados do usuário no environment
-        
-        Isso garante uma experiência de teste fluida, sem necessidade de copiar/colar tokens manualmente.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [cpf, senha]
-              properties:
-                cpf: 
-                  type: string
-                  example: "00000000000"
-                senha: 
-                  type: string
-                  format: password
-                  example: "AdminSenhaForte123"
-      responses:
-        '200':
-          description: "Login bem-sucedido."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                  usuario:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      nomeCompleto:
-                        type: string
-                      cpf:
-                        type: string
-        '401':
-          description: "CPF ou senha inválidos."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /clientes:
-    post:
-      tags: ["Clientes"]
-      summary: "Cria um novo cliente."
-      description: "Cria uma nova conta e gera um cartão de débito automaticamente."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [nomeCompleto, cpf, senha, email]
-              properties:
-                nomeCompleto: 
-                  type: string
-                  example: "João Silva"
-                cpf: 
-                  type: string
-                  example: "12345678901"
-                senha: 
-                  type: string
-                  format: password
-                  example: "SenhaForte123"
-                email:
-                  type: string
-                  format: email
-                  example: "joao.silva@email.com"
-      responses:
-        '201':
-          description: "Cliente criado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsuarioConta'
-        '400':
-          description: "Dados inválidos ou CPF já cadastrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /account/me:
-    get:
-      tags: ["Contas"]
-      summary: "Consulta dados do usuário logado."
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Dados do usuário retornados com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsuarioConta'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-
-  /account/balance:
-    get:
-      tags: ["Contas"]
-      summary: "Consulta saldo do usuário logado."
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Saldo retornado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SaldoResponse'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-
-  /account/statement:
-    get:
-      tags: ["Contas"]
-      summary: "Consulta extrato do usuário logado."
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: pagina
-          in: query
-          schema:
-            type: integer
-            default: 1
-        - name: limite
-          in: query
-          schema:
-            type: integer
-            default: 10
-      responses:
-        '200':
-          description: "Extrato retornado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ExtratoResponse'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-
-  /cards:
-    get:
-      tags: ["Cartões"]
-      summary: "Lista cartões do usuário logado."
-      description: "Retorna todos os cartões (débito e crédito) do usuário autenticado."
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Cartões retornados com sucesso."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Cartao'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-    post:
-      tags: ["Cartões"]
-      summary: "Solicita um novo cartão para o usuário logado."
-      description: "Cria uma solicitação de novo cartão (débito ou crédito) para o usuário autenticado. O cartão é automaticamente vinculado à conta do usuário."
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [tipo]
-              properties:
-                tipo:
-                  type: string
-                  enum: [debito, credito]
-                  example: "credito"
-                  description: "Tipo do cartão a ser solicitado"
-      responses:
-        '201':
-          description: "Cartão solicitado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cartao'
-        '400':
-          description: "Erro na solicitação do cartão (ex: usuário já possui cartão do mesmo tipo)."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /cards/{id}/pin:
-    patch:
-      tags: ["Cartões"]
-      summary: "Define PIN do cartão do usuário logado."
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [pinAtual, novoPIN]
-              properties:
-                pinAtual:
-                  type: string
-                  example: "1234"
-                novoPIN:
-                  type: string
-                  example: "5678"
-      responses:
-        '200':
-          description: "PIN alterado com sucesso."
-        '400':
-          description: "Erro ao alterar PIN."
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-        '403':
-          description: "Cartão não pertence ao usuário."
-
-  /cards/{id}/bloquear:
-    patch:
-      tags: ["Cartões"]
-      summary: "Bloqueia um cartão do usuário logado."
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: "Cartão bloqueado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cartao'
-        '400':
-          description: "Erro ao bloquear cartão."
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-        '403':
-          description: "Cartão não pertence ao usuário."
-
-  /cards/{id}/desbloquear:
-    patch:
-      tags: ["Cartões"]
-      summary: "Desbloqueia um cartão do usuário logado."
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: "Cartão desbloqueado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cartao'
-        '400':
-          description: "Erro ao desbloquear cartão."
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-        '403':
-          description: "Cartão não pertence ao usuário."
-
-  /transactions/transfer:
-    post:
-      tags: ["Transações"]
-      summary: "Realiza transferência da conta do usuário logado."
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [agenciaDestino, contaDestino, valor, cartaoId, pin]
-              properties:
-                agenciaDestino:
-                  type: string
-                  example: "0001"
-                contaDestino:
-                  type: string
-                  example: "12345678"
-                valor:
-                  type: number
-                  format: float
-                  example: 100.00
-                cartaoId:
-                  type: string
-                  format: uuid
-                  example: "31d55a19-96af-485d-bd21-ad6ac22f9065"
-                pin:
-                  type: string
-                  example: "1234"
-      responses:
-        '200':
-          description: "Transferência realizada com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TransferenciaResponse'
-        '400':
-          description: "Erro na transferência."
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-
-  /transactions/deposit:
-    post:
-      tags: ["Transações"]
-      summary: "Realiza depósito na conta do usuário logado."
-      description: "Efetua um depósito na conta bancária do usuário autenticado. O valor é creditado automaticamente no saldo da conta."
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [valor]
-              properties:
-                valor:
-                  type: number
-                  format: float
-                  example: 500.00
-                  description: "Valor a ser depositado (deve ser maior que zero)"
-      responses:
-        '200':
-          description: "Depósito realizado com sucesso."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DepositoResponse'
-        '400':
-          description: "Erro no depósito (ex: valor inválido)."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /transactions/credit-purchase:
-    post:
-      tags: ["Transações"]
-      summary: "Realiza compra com cartão de crédito do usuário logado."
-      description: "Efetua uma compra utilizando o cartão de crédito ativo do usuário autenticado. O valor é debitado do limite disponível do cartão."
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [valor, estabelecimento]
-              properties:
-                valor:
-                  type: number
-                  format: float
-                  example: 50.00
-                  description: "Valor da compra (deve ser maior que zero)"
-                estabelecimento:
-                  type: string
-                  example: "Loja Exemplo"
-                  description: "Nome do estabelecimento onde a compra foi realizada"
-      responses:
-        '201':
-          description: "Compra realizada com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  transactionId:
-                    type: string
-                    example: "txn_123456789"
-                  type:
-                    type: string
-                    example: "CREDIT_PURCHASE"
-                  amount:
-                    type: number
-                    format: float
-                    example: 50.00
-                  description:
-                    type: string
-                    example: "Compra no crédito em Loja Exemplo"
-                  date:
-                    type: string
-                    format: date-time
-                    example: "2025-08-02T17:41:17.000Z"
-                  status:
-                    type: string
-                    example: "COMPLETED"
-                  cardId:
-                    type: string
-                    format: uuid
-                    example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
-        '400':
-          description: "Erro na compra (ex: valor inválido, limite insuficiente)."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '404':
-          description: "Cartão de crédito ativo não encontrado para o usuário."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /account/bill-inquiry:
-    get:
-      tags: ["Contas"]
-      summary: "Consulta fatura do cartão de crédito do usuário logado."
-      description: "Retorna os detalhes da fatura atual do cartão de crédito ativo do usuário autenticado, incluindo valor total, valor mínimo, limite disponível e datas de vencimento."
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Fatura consultada com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  cardId:
-                    type: string
-                    format: uuid
-                    example: "a70def3c-05c3-4782-b4b2-f9011b39f0a2"
-                    description: "ID do cartão de crédito"
-                  cardNumber:
-                    type: string
-                    example: "5658719913873559"
-                    description: "Número do cartão (parcialmente mascarado)"
-                  valorTotal:
-                    type: number
-                    format: float
-                    example: 150.75
-                    description: "Valor total da fatura"
-                  valorMinimo:
-                    type: number
-                    format: float
-                    example: 15.08
-                    description: "Valor mínimo da fatura"
-                  limite:
-                    type: number
-                    format: float
-                    example: 1000.00
-                    description: "Limite total do cartão"
-                  limiteDisponivel:
-                    type: number
-                    format: float
-                    example: 849.25
-                    description: "Limite disponível para uso"
-                  dataVencimento:
-                    type: string
-                    format: date
-                    example: "2025-09-15"
-                    description: "Data de vencimento da fatura"
-                  dataFechamento:
-                    type: string
-                    format: date
-                    example: "2025-08-15"
-                    description: "Data de fechamento da fatura"
-                  jurosRotativo:
-                    type: number
-                    format: float
-                    example: 12.5
-                    description: "Taxa de juros rotativo (%)"
-                  temFaturaPendente:
-                    type: boolean
-                    example: true
-                    description: "Indica se há fatura pendente para pagamento"
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '404':
-          description: "Cartão de crédito ativo não encontrado para o usuário."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /transactions/pay-bill:
-    post:
-      tags: ["Transações"]
-      summary: "Paga fatura do cartão de crédito do usuário logado."
-      description: "Efetua o pagamento da fatura do cartão de crédito ativo do usuário autenticado. O valor é debitado da conta corrente do usuário. Agora inclui validação de fatura pendente antes do pagamento."
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [valor]
-              properties:
-                valor:
-                  type: number
-                  format: float
-                  example: 50.00
-                  description: "Valor do pagamento da fatura (deve ser maior que zero)"
-      responses:
-        '201':
-          description: "Fatura paga com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  transactionId:
-                    type: string
-                    example: "txn_987654321"
-                  type:
-                    type: string
-                    example: "BILL_PAYMENT"
-                  amount:
-                    type: number
-                    format: float
-                    example: 50.00
-                  description:
-                    type: string
-                    example: "Pagamento de fatura do cartão de crédito"
-                  date:
-                    type: string
-                    format: date-time
-                    example: "2025-08-02T17:41:17.000Z"
-                  status:
-                    type: string
-                    example: "COMPLETED"
-                  cardId:
-                    type: string
-                    format: uuid
-                    example: "2b9f98f6-3f51-4cea-b4aa-192dee2db4fe"
-        '400':
-          description: "Erro ao pagar fatura (ex: valor inválido, saldo insuficiente, não há fatura pendente, valor excede o valor da fatura)."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '404':
-          description: "Cartão de crédito ativo não encontrado para o usuário."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /investments/summary:
-    get:
-      tags: ["Investimentos"]
-      summary: "Resumo de investimentos do usuário logado."
-      description: |
-        Retorna um resumo completo dos investimentos do usuário, incluindo:
-        - Total investido e valor atual
-        - Rentabilidade total e percentual
-        - Quantidade de investimentos ativos
-        - Agrupamento por tipo de investimento
-        - Lista dos investimentos mais recentes
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Resumo obtido com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  totalInvested:
-                    type: number
-                    format: float
-                    example: 5000.00
-                    description: "Valor total investido"
-                  currentValue:
-                    type: number
-                    format: float
-                    example: 5250.75
-                    description: "Valor atual de todos os investimentos"
-                  totalReturn:
-                    type: number
-                    format: float
-                    example: 250.75
-                    description: "Rendimento total absoluto"
-                  returnPercentage:
-                    type: number
-                    format: float
-                    example: 5.02
-                    description: "Percentual de rentabilidade total"
-                  activeInvestments:
-                    type: integer
-                    example: 3
-                    description: "Quantidade de investimentos ativos"
-                  byType:
-                    type: array
-                    description: "Investimentos agrupados por tipo"
-                    items:
-                      type: object
-                      properties:
-                        tipo:
-                          type: string
-                          example: "POUPANCA"
-                        quantidade:
-                          type: integer
-                          example: 1
-                        valorInvestido:
-                          type: number
-                          format: float
-                          example: 1000.00
-                        valorAtual:
-                          type: number
-                          format: float
-                          example: 1050.25
-                        rentabilidade:
-                          type: number
-                          format: float
-                          example: 5.03
-                  recentInvestments:
-                    type: array
-                    description: "Investimentos mais recentes"
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                          example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
-                        name:
-                          type: string
-                          example: "Poupança Teste"
-                        type:
-                          type: string
-                          example: "POUPANCA"
-                        investedAmount:
-                          type: number
-                          format: float
-                          example: 500.00
-                        currentValue:
-                          type: number
-                          format: float
-                          example: 525.13
-                        returnPercentage:
-                          type: number
-                          format: float
-                          example: 5.03
-                        status:
-                          type: string
-                          example: "ATIVO"
-                        createdAt:
-                          type: string
-                          format: date-time
-                          example: "2025-09-11T01:43:53.000Z"
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /investments/apply:
-    post:
-      tags: ["Investimentos"]
-      summary: "Aplicar em um novo investimento."
-      description: |
-        Cria uma nova aplicação de investimento para o usuário logado.
-        O valor é debitado automaticamente da conta corrente.
-        
-        **Tipos de investimento disponíveis:**
-        - POUPANCA: Poupança tradicional
-        - CDB: Certificado de Depósito Bancário
-        - LCI: Letra de Crédito Imobiliário
-        - LCA: Letra de Crédito do Agronegócio
-        - TESOURO_DIRETO: Títulos do Tesouro Nacional
-        - FUNDOS: Fundos de investimento
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [tipo, valor, nome]
-              properties:
-                tipo:
-                  type: string
-                  enum: [POUPANCA, CDB, LCI, LCA, TESOURO_DIRETO, FUNDOS]
-                  example: "POUPANCA"
-                  description: "Tipo do investimento"
-                valor:
-                  type: number
-                  format: float
-                  minimum: 1
-                  example: 500.00
-                  description: "Valor a ser investido (mínimo R$ 1,00)"
-                nome:
-                  type: string
-                  example: "Poupança Teste"
-                  description: "Nome personalizado para o investimento"
-                descricao:
-                  type: string
-                  example: "Investimento de teste"
-                  description: "Descrição opcional do investimento"
-      responses:
-        '201':
-          description: "Investimento aplicado com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  investmentId:
-                    type: string
-                    format: uuid
-                    example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
-                  type:
-                    type: string
-                    example: "POUPANCA"
-                  investedAmount:
-                    type: number
-                    format: float
-                    example: 500.00
-                  returnRate:
-                    type: number
-                    format: float
-                    example: 0.5
-                    description: "Taxa de retorno anual (%)"
-                  maturityDate:
-                    type: string
-                    format: date
-                    example: "2026-09-10"
-                    description: "Data de vencimento"
-                  status:
-                    type: string
-                    example: "ATIVO"
-                  canRedeem:
-                    type: boolean
-                    example: true
-                    description: "Indica se permite resgate antecipado"
-                  newAccountBalance:
-                    type: number
-                    format: float
-                    example: 1500.00
-                    description: "Novo saldo da conta após o investimento"
-                  message:
-                    type: string
-                    example: "Investimento realizado com sucesso"
-        '400':
-          description: "Erro na aplicação (saldo insuficiente, valor inválido, etc.)"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /investments/applications:
-    get:
-      tags: ["Investimentos"]
-      summary: "Listar todas as aplicações do usuário."
-      description: |
-        Retorna uma lista completa de todos os investimentos do usuário logado,
-        incluindo investimentos ativos, vencidos e resgatados.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: status
-          in: query
-          description: "Filtrar por status do investimento"
-          schema:
-            type: string
-            enum: [ATIVO, VENCIDO, RESGATADO]
-        - name: tipo
-          in: query
-          description: "Filtrar por tipo de investimento"
-          schema:
-            type: string
-            enum: [POUPANCA, CDB, LCI, LCA, TESOURO_DIRETO, FUNDOS]
-      responses:
-        '200':
-          description: "Lista de investimentos retornada com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  investments:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Investment'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /investments/{investmentId}/yield:
-    get:
-      tags: ["Investimentos"]
-      summary: "Consultar rendimento de um investimento específico."
-      description: |
-        Retorna informações detalhadas sobre o rendimento de um investimento específico,
-        incluindo cálculos de rendimento absoluto, percentual, projeções e período de investimento.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: investmentId
-          in: path
-          required: true
-          description: "ID único do investimento"
-          schema:
-            type: string
-            format: uuid
-            example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
-      responses:
-        '200':
-          description: "Rendimento consultado com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  investmentId:
-                    type: string
-                    format: uuid
-                    example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
-                  name:
-                    type: string
-                    example: "Poupança Teste"
-                  type:
-                    type: string
-                    example: "POUPANCA"
-                  status:
-                    type: string
-                    example: "ATIVO"
-                  investedAmount:
-                    type: number
-                    format: float
-                    example: 500.00
-                    description: "Valor investido inicialmente"
-                  currentValue:
-                    type: number
-                    format: float
-                    example: 525.13
-                    description: "Valor atual do investimento"
-                  yield:
-                    type: object
-                    description: "Informações de rendimento"
-                    properties:
-                      absolute:
-                        type: number
-                        format: float
-                        example: 25.13
-                        description: "Rendimento absoluto (R$)"
-                      percentage:
-                        type: number
-                        format: float
-                        example: 5.03
-                        description: "Rendimento percentual (%)"
-                      dailyAverage:
-                        type: number
-                        format: float
-                        example: 0.84
-                        description: "Rendimento diário médio (R$)"
-                      monthlyProjected:
-                        type: number
-                        format: float
-                        example: 25.20
-                        description: "Rendimento mensal projetado (R$)"
-                      annualProjected:
-                        type: number
-                        format: float
-                        example: 306.60
-                        description: "Rendimento anual projetado (R$)"
-                  period:
-                    type: object
-                    description: "Informações de período"
-                    properties:
-                      investmentDate:
-                        type: string
-                        format: date-time
-                        example: "2025-09-11T01:43:53.000Z"
-                        description: "Data da aplicação"
-                      daysInvested:
-                        type: integer
-                        example: 30
-                        description: "Dias desde a aplicação"
-                      maturityDate:
-                        type: string
-                        format: date
-                        example: "2026-09-10"
-                        description: "Data de vencimento"
-                  rates:
-                    type: object
-                    description: "Taxas e rendimentos"
-                    properties:
-                      returnRate:
-                        type: number
-                        format: float
-                        example: 0.5
-                        description: "Taxa de retorno anual (%)"
-                      currentYield:
-                        type: number
-                        format: float
-                        example: 5.03
-                        description: "Rendimento atual (%)"
-                  canRedeem:
-                    type: boolean
-                    example: true
-                    description: "Indica se permite resgate"
-                  description:
-                    type: string
-                    example: "Investimento de teste"
-        '404':
-          description: "Investimento não encontrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-
-  /investments/{investmentId}/redeem:
-    post:
-      tags: ["Investimentos"]
-      summary: "Resgatar investimento (parcial ou total)."
-      description: |
-        Realiza o resgate de um investimento, podendo ser parcial ou total.
-        O valor resgatado é creditado automaticamente na conta corrente.
-        
-        **Tipos de resgate:**
-        - **Parcial**: Resgata apenas parte do valor investido
-        - **Total**: Resgata todo o valor do investimento (encerra o investimento)
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: investmentId
-          in: path
-          required: true
-          description: "ID único do investimento"
-          schema:
-            type: string
-            format: uuid
-            example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [amount]
-              properties:
-                amount:
-                  type: number
-                  format: float
-                  minimum: 0.01
-                  example: 200.00
-                  description: "Valor a ser resgatado (deve ser maior que zero)"
-      responses:
-        '200':
-          description: "Resgate realizado com sucesso."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  investmentId:
-                    type: string
-                    format: uuid
-                    example: "267c29c5-a10c-48c4-9035-0c2fdf80dab6"
-                  redeemedAmount:
-                    type: number
-                    format: float
-                    example: 200.00
-                    description: "Valor resgatado"
-                  remainingAmount:
-                    type: number
-                    format: float
-                    example: 300.00
-                    description: "Valor restante no investimento (0 se resgate total)"
-                  newAccountBalance:
-                    type: number
-                    format: float
-                    example: 1700.00
-                    description: "Novo saldo da conta após o resgate"
-                  redeemType:
-                    type: string
-                    enum: [PARTIAL, TOTAL]
-                    example: "PARTIAL"
-                    description: "Tipo do resgate realizado"
-                  redeemedAt:
-                    type: string
-                    format: date-time
-                    example: "2025-09-11T01:44:15.000Z"
-                    description: "Data e hora do resgate"
-                  message:
-                    type: string
-                    example: "Resgate realizado com sucesso"
-        '400':
-          description: "Erro no resgate (valor inválido, investimento não permite resgate, etc.)"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '404':
-          description: "Investimento não encontrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-        '401':
-          description: "Token de autenticação inválido ou expirado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
+  - name: Sistema
+    description: Endpoints de sistema e monitoramento
+  - name: Autenticação
+    description: Endpoints de autenticação e autorização
+  - name: Conta
+    description: Gerenciamento de conta do usuário
+  - name: Cartões
+    description: Gerenciamento de cartões de crédito e débito
+  - name: Transações
+    description: Operações financeiras (depósitos, transferências, compras)
+  - name: Investimentos
+    description: Consulta e gerenciamento de investimentos

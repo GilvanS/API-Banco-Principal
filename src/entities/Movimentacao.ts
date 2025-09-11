@@ -118,6 +118,14 @@ export class Movimentacao {
     @Column("text", { nullable: true })
     estabelecimento?: string;
 
+    @Column({
+        type: 'varchar',
+        length: 255,
+        nullable: true,
+        unique: true
+    })
+    idempotencyKey?: string;
+
     @ManyToOne(() => UsuarioConta, usuarioConta => usuarioConta.movimentacoes)
     usuarioConta!: UsuarioConta;
 

@@ -1,18 +1,18 @@
 // src/services/CartaoService.ts
-import { AppDataSource } from "../database/data-source";
-import { Cartao, TipoCartao, BandeiraCartao, StatusCartao, TitularidadeCartao } from "../entities/Cartao";
-import { UsuarioConta } from "../entities/UsuarioConta";
-import { LoggerService } from "./LoggerService";
-import bcrypt from "bcrypt";
+import { AppDataSource } from '../database/data-source';
+import { Cartao, TipoCartao, StatusCartao, BandeiraCartao, TitularidadeCartao } from '../entities/Cartao';
+import { UsuarioConta } from '../entities/UsuarioConta';
+import { LoggerService } from './LoggerService';
+import * as bcrypt from 'bcrypt';
 
 export class CartaoService {
     private static repository = AppDataSource.getRepository(Cartao);
     private static usuarioRepository = AppDataSource.getRepository(UsuarioConta);
 
-    static async solicitarCartaoAdicional(dados: {
+    static async solicitarSegundaVia(dados: {
         usuarioId: string;
-        bandeira: BandeiraCartao;
-        limite?: number;
+        motivo: 'perda' | 'roubo' | 'danificacao';
+        bandeira?: BandeiraCartao;
     }) {
         try {
             const usuario = await this.usuarioRepository.findOne({
@@ -23,42 +23,57 @@ export class CartaoService {
                 throw new Error("Usuário não encontrado");
             }
 
-            // Verificar se o usuário já tem cartão de crédito titular
-            const cartaoTitular = await this.repository.findOne({
+            // Buscar cartão ativo atual do usuário
+            const cartaoAtual = await this.repository.findOne({
                 where: { 
                     usuarioConta: { id: dados.usuarioId },
-                    tipo: TipoCartao.CREDITO,
-                    titularidade: TitularidadeCartao.TITULAR
-                }
+                    status: StatusCartao.ATIVO,
+                    ativo: true
+                },
+                order: { dataCriacao: "DESC" }
             });
 
-            if (!cartaoTitular) {
-                throw new Error("Usuário deve ter um cartão de crédito titular antes de solicitar cartão adicional");
+            if (!cartaoAtual) {
+                throw new Error("Nenhum cartão ativo encontrado para substituição");
             }
 
-            const cartao = this.repository.create({
+            // Invalidar cartão atual
+            cartaoAtual.status = StatusCartao.CANCELADO;
+            cartaoAtual.ativo = false;
+            cartaoAtual.dataSubstituicao = new Date();
+            await this.repository.save(cartaoAtual);
+
+            // Criar nova segunda via
+            const novoCartao = this.repository.create({
                 usuarioConta: usuario,
-                tipo: TipoCartao.CREDITO,
-                bandeira: dados.bandeira,
-                titularidade: TitularidadeCartao.ADICIONAL,
-                numero: this.gerarNumeroCartao(dados.bandeira),
+                tipo: TipoCartao.MULTIPLO, // Sempre cartão múltiplo
+                bandeira: dados.bandeira || cartaoAtual.bandeira, // Manter bandeira ou usar nova
+                titularidade: TitularidadeCartao.TITULAR,
+                numero: this.gerarNumeroCartao(dados.bandeira || cartaoAtual.bandeira),
                 cvv: this.gerarCVV(),
                 dataValidade: this.gerarDataValidade(),
-                limite: dados.limite || 500.00, // Limite menor para cartão adicional
-                pin: null // Cartões de crédito não têm PIN
+                limite: cartaoAtual.limite, // Manter mesmo limite
+                limiteDisponivel: cartaoAtual.limite || 0,
+                pin: await bcrypt.hash("1234", 10), // PIN padrão
+                ehSegundaVia: true,
+                motivoSubstituicao: dados.motivo,
+                cartaoAnteriorId: cartaoAtual.id,
+                status: StatusCartao.ATIVO,
+                ativo: true
             });
 
-            await this.repository.save(cartao);
+            await this.repository.save(novoCartao);
 
-            LoggerService.info("Cartão adicional solicitado com sucesso", {
+            LoggerService.info("Segunda via de cartão solicitada com sucesso", {
                 usuarioId: dados.usuarioId,
-                bandeira: dados.bandeira,
-                titularidade: TitularidadeCartao.ADICIONAL
+                motivo: dados.motivo,
+                cartaoAnteriorId: cartaoAtual.id,
+                novoCartaoId: novoCartao.id
             });
 
-            return cartao;
+            return novoCartao;
         } catch (error) {
-            LoggerService.error("Erro ao solicitar cartão adicional", error);
+            LoggerService.error("Erro ao solicitar segunda via de cartão", error);
             throw error;
         }
     }
@@ -226,7 +241,7 @@ export class CartaoService {
                 order: { dataCriacao: "DESC" }
             });
 
-            return cartoes.map(cartao => ({
+            return cartoes.map((cartao: Cartao) => ({
                 id: cartao.id,
                 tipo: cartao.tipo,
                 bandeira: cartao.bandeira,

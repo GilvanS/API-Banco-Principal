@@ -301,7 +301,7 @@ router.post('/credit-purchase', authMiddleware, async (req, res) => {
     });
 
     res.status(201).json({
-      transactionId: resultado.dados.agencia, // Ajustar conforme o retorno real
+      transactionId: resultado.dados.numeroCartao, // Ajustar conforme o retorno real
       type: 'CREDIT_PURCHASE',
       amount: resultado.dados.valor,
       description: `Compra no crédito em ${establishment}`,
@@ -359,7 +359,7 @@ router.post('/pay-bill', authMiddleware, async (req, res) => {
     });
 
     res.status(201).json({
-      transactionId: resultado.id, // Ajustar conforme o retorno real
+      transactionId: resultado.dados.valorPago.toString(), // Ajustar conforme o retorno real
       type: 'BILL_PAYMENT',
       amount: amount,
       description: `Pagamento de fatura do cartão de crédito`,

@@ -3,6 +3,7 @@ import { body } from "express-validator";
 import { TransacaoService } from "../services/TransacaoService";
 import { validateRequest } from "../middleware/validateRequest";
 import { LoggerService } from "../services/LoggerService";
+import { idempotencyMiddleware, IdempotentRequest } from "../middleware/idempotencyMiddleware";
 
 const router = Router();
 
@@ -38,10 +39,22 @@ interface PagamentoDebitoRequest {
     estabelecimento: string;
 }
 
+interface CompraCreditoRequest {
+    numeroCartao: string;
+    valor: number;
+    estabelecimento: string;
+}
+
+interface PagarFaturaRequest {
+    usuarioId: string;
+    valor: number;
+}
+
 
 
 // POST /transacoes/transferir - Transferência entre contas por agência/conta/nome/CPF
 router.post("/transferir",
+    idempotencyMiddleware,
     [
         body("agenciaOrigem").notEmpty().withMessage("Agência de origem é obrigatória"),
         body("contaOrigem").notEmpty().withMessage("Conta de origem é obrigatória"),
@@ -54,9 +67,12 @@ router.post("/transferir",
         body("valor").isFloat({ min: 10 }).withMessage("Valor deve ser maior ou igual a R$ 10,00"),
         validateRequest
     ],
-    async (req: Request<{}, {}, TransferenciaRequest>, res: Response) => {
+    async (req: IdempotentRequest & Request<{}, {}, TransferenciaRequest>, res: Response) => {
         try {
-            const resultado = await TransacaoService.transferir(req.body);
+            const resultado = await TransacaoService.transferir({
+                ...req.body,
+                idempotencyKey: req.idempotencyKey
+            });
             return res.json(resultado);
         } catch (error) {
             LoggerService.error("Erro ao realizar transferência", error);
@@ -67,6 +83,7 @@ router.post("/transferir",
 
 // POST /transacoes/pix - Transferência PIX por CPF ou email
 router.post("/pix",
+    idempotencyMiddleware,
     [
         body("cpfOrigem").notEmpty().withMessage("CPF de origem é obrigatório"),
         body("pixDestino").notEmpty().withMessage("PIX de destino é obrigatório"),
@@ -74,9 +91,12 @@ router.post("/pix",
         body("valor").isFloat({ min: 10 }).withMessage("Valor deve ser maior ou igual a R$ 10,00"),
         validateRequest
     ],
-    async (req: Request<{}, {}, TransferenciaPIXRequest>, res: Response) => {
+    async (req: IdempotentRequest & Request<{}, {}, TransferenciaPIXRequest>, res: Response) => {
         try {
-            const resultado = await TransacaoService.transferirPIX(req.body);
+            const resultado = await TransacaoService.transferirPIX({
+                ...req.body,
+                idempotencyKey: req.idempotencyKey
+            });
             return res.json(resultado);
         } catch (error) {
             LoggerService.error("Erro ao realizar transferência PIX", error);
@@ -87,6 +107,7 @@ router.post("/pix",
 
 // POST /transacoes/pagamento-debito - Pagamento com cartão de débito
 router.post("/pagamento-debito",
+    idempotencyMiddleware,
     [
         body("numeroCartao").notEmpty().withMessage("Número do cartão é obrigatório"),
         body("pin").isLength({ min: 4, max: 4 }).withMessage("PIN deve ter 4 dígitos"),
@@ -94,9 +115,12 @@ router.post("/pagamento-debito",
         body("estabelecimento").notEmpty().withMessage("Estabelecimento é obrigatório"),
         validateRequest
     ],
-    async (req: Request<{}, {}, PagamentoDebitoRequest>, res: Response) => {
+    async (req: IdempotentRequest & Request<{}, {}, PagamentoDebitoRequest>, res: Response) => {
         try {
-            const resultado = await TransacaoService.pagamentoDebito(req.body);
+            const resultado = await TransacaoService.pagamentoDebito({
+                ...req.body,
+                idempotencyKey: req.idempotencyKey
+            });
             return res.json(resultado);
         } catch (error) {
             LoggerService.error("Erro ao realizar pagamento com débito", error);
@@ -107,15 +131,19 @@ router.post("/pagamento-debito",
 
 // POST /transacoes/compra-credito - Compra com cartão de crédito
 router.post("/compra-credito",
+    idempotencyMiddleware,
     [
         body("numeroCartao").notEmpty().withMessage("Número do cartão é obrigatório"),
         body("valor").isFloat({ min: 0.01 }).withMessage("Valor deve ser maior que zero"),
         body("estabelecimento").notEmpty().withMessage("Estabelecimento é obrigatório"),
         validateRequest
     ],
-    async (req: Request<{}, {}, CompraCreditoRequest>, res: Response) => {
+    async (req: IdempotentRequest & Request<{}, {}, CompraCreditoRequest>, res: Response) => {
         try {
-            const resultado = await TransacaoService.compraCredito(req.body);
+            const resultado = await TransacaoService.compraCredito({
+                ...req.body,
+                idempotencyKey: req.idempotencyKey
+            });
             return res.json(resultado);
         } catch (error) {
             LoggerService.error("Erro ao realizar compra com crédito", error);
@@ -126,15 +154,19 @@ router.post("/compra-credito",
 
 // POST /transacoes/depositar - Depósito em conta
 router.post("/depositar",
+    idempotencyMiddleware,
     [
         body("agencia").notEmpty().withMessage("Agência é obrigatória"),
         body("conta").notEmpty().withMessage("Conta é obrigatória"),
         body("valor").isFloat({ min: 0.01 }).withMessage("Valor deve ser maior que zero"),
         validateRequest
     ],
-    async (req: Request<{}, {}, DepositoRequest>, res: Response) => {
+    async (req: IdempotentRequest & Request<{}, {}, DepositoRequest>, res: Response) => {
         try {
-            const resultado = await TransacaoService.depositar(req.body);
+            const resultado = await TransacaoService.depositar({
+                ...req.body,
+                idempotencyKey: req.idempotencyKey
+            });
             return res.json(resultado);
         } catch (error) {
             LoggerService.error("Erro ao realizar depósito", error);
@@ -145,14 +177,18 @@ router.post("/depositar",
 
 // POST /transacoes/pagar-fatura - Pagar fatura do cartão de crédito
 router.post("/pagar-fatura",
+    idempotencyMiddleware,
     [
         body("usuarioId").notEmpty().withMessage("ID do usuário é obrigatório"),
         body("valor").isFloat({ min: 0.01 }).withMessage("Valor deve ser maior que zero"),
         validateRequest
     ],
-    async (req: Request<{}, {}, PagarFaturaRequest>, res: Response) => {
+    async (req: IdempotentRequest & Request<{}, {}, PagarFaturaRequest>, res: Response) => {
         try {
-            const resultado = await TransacaoService.pagarFatura(req.body);
+            const resultado = await TransacaoService.pagarFatura({
+                ...req.body,
+                idempotencyKey: req.idempotencyKey
+            });
             return res.json(resultado);
         } catch (error) {
             LoggerService.error("Erro ao pagar fatura", error);
@@ -180,4 +216,4 @@ router.get("/extrato/:usuarioId", async (req: Request, res: Response) => {
     }
 });
 
-export default router; 
+export default router;

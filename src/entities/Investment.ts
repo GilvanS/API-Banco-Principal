@@ -94,6 +94,14 @@ export class Investment {
   })
   descricao?: string;
 
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    unique: true
+  })
+  idempotencyKey?: string;
+
   @ManyToOne(() => UsuarioConta, usuarioConta => usuarioConta.investments)
   usuarioConta!: UsuarioConta;
 

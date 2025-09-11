@@ -4,13 +4,15 @@ import { CartaoService } from "../services/CartaoService";
 import { BandeiraCartao } from "../entities/Cartao";
 import { validateRequest } from "../middleware/validateRequest";
 import { LoggerService } from "../services/LoggerService";
+import { idempotencyMiddleware, IdempotentRequest } from "../middleware/idempotencyMiddleware";
+import { authMiddleware, AuthRequest } from "../middleware/authMiddleware";
 
 const router = Router();
 
-interface SolicitarCartaoAdicionalRequest {
+interface SolicitarSegundaViaRequest {
     usuarioId: string;
-    bandeira: BandeiraCartao;
-    limite?: number;
+    motivo: 'perda' | 'roubo' | 'danificacao';
+    bandeira?: BandeiraCartao;
 }
 
 interface DefinirPINRequest {
@@ -18,20 +20,32 @@ interface DefinirPINRequest {
     novoPIN: string;
 }
 
-// POST /cartoes - Solicitar cartão adicional
-router.post("/",
+// POST /cartoes/segunda-via - Solicitar segunda via de cartão
+router.post("/segunda-via",
+    authMiddleware,
+    idempotencyMiddleware,
     [
-        body("usuarioId").notEmpty().withMessage("ID do usuário é obrigatório"),
-        body("bandeira").isIn(["master", "visa", "elo", "amex"]).withMessage("Bandeira inválida"),
-        body("limite").optional().isFloat({ min: 100 }).withMessage("Limite deve ser maior que R$ 100"),
+        body("motivo").isIn(["perda", "roubo", "danificacao"]).withMessage("Motivo deve ser: perda, roubo ou danificacao"),
+        body("bandeira").optional().isIn(["master", "visa", "elo", "amex"]).withMessage("Bandeira inválida"),
         validateRequest
     ],
-    async (req: Request<{}, {}, SolicitarCartaoAdicionalRequest>, res: Response) => {
+    async (req: IdempotentRequest & AuthRequest & Request<{}, {}, Omit<SolicitarSegundaViaRequest, 'usuarioId'>>, res: Response) => {
         try {
-            const cartao = await CartaoService.solicitarCartaoAdicional(req.body);
+            const usuarioId = req.usuario?.id;
+            if (!usuarioId) {
+                return res.status(401).json({ erro: "Usuário não autenticado" });
+            }
+            
+            const dados = {
+                usuarioId,
+                motivo: req.body.motivo,
+                bandeira: req.body.bandeira
+            };
+            
+            const cartao = await CartaoService.solicitarSegundaVia(dados);
             return res.status(201).json(cartao);
         } catch (error) {
-            LoggerService.error("Erro ao solicitar cartão adicional", error);
+            LoggerService.error("Erro ao solicitar segunda via de cartão", error);
             return res.status(400).json({ erro: (error as Error).message });
         }
     }
@@ -92,4 +106,4 @@ router.patch("/:id/desbloquear", async (req: Request<{ id: string }>, res: Respo
     }
 });
 
-export default router; 
+export default router;

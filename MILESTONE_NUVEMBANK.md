@@ -33,6 +33,12 @@
   - [x] Manter `PATCH /api/v1/cards/{id}/pin`.
   - [x] Manter `PATCH /api/v1/cards/{id}/block`.
   - [x] Manter `PATCH /api/v1/cards/{id}/unblock`.
+- **Issue:** Endpoint: Solicitar Segunda Via de Cartão (`POST /api/v1/cartoes/segunda-via`)
+  - [x] Implementar funcionalidade de segunda via com cancelamento automático do cartão anterior.
+  - [x] Gerar novo cartão múltiplo (débito + crédito) mantendo o mesmo limite.
+  - [x] Adicionar middleware de autenticação e idempotência.
+  - [x] Validar motivos: perda, roubo, danificação.
+  - [x] Suportar bandeiras: master, visa, elo, amex.
 
 ## Task 4: Módulo de Transações Financeiras (Geração de Massa)
 - **Issue:** Endpoint: Depósito (`POST /api/v1/transactions/deposit`)

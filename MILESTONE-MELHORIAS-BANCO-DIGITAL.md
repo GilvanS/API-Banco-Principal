@@ -246,6 +246,38 @@ ApiError:
 - [ ] Teste de mensagens contextuais
 - [ ] Teste de detalhes de erro
 
+### Testes para Funcionalidade de Segunda Via
+- [ ] Criar testes unitários para CartaoService.solicitarSegundaVia()
+- [ ] Criar testes de integração para endpoint POST /cartoes/segunda-via
+- [ ] Validar cancelamento correto do cartão anterior
+- [ ] Testar geração de novo cartão múltiplo com mesmo limite
+
+---
+
+## 📋 Funcionalidade de Segunda Via de Cartão
+
+### Implementação Completa da Segunda Via
+- [x] Criar endpoint POST /api/v1/cartoes/segunda-via com autenticação JWT
+- [x] Implementar lógica de cancelamento automático do cartão anterior
+- [x] Gerar novo cartão múltiplo mantendo limite de crédito
+- [x] Adicionar middleware de idempotência com UUID v4
+- [x] Validar motivos aceitos: perda, roubo, danificação
+- [x] Suportar bandeiras: master, visa, elo, amex
+- [x] Implementar logging detalhado das operações
+- [x] Testar funcionalidade end-to-end com sucesso
+
+### Melhorias de Segurança e Auditoria
+- [x] Rastreamento completo de substituições de cartão
+- [x] Campos de auditoria: motivoSubstituicao, cartaoAnteriorId, ehSegundaVia
+- [x] Validação de usuário autenticado via token JWT
+- [x] Prevenção de duplicação via middleware de idempotência
+
+### Documentação da Funcionalidade
+- [ ] Atualizar documentação Swagger com endpoint POST /cartoes/segunda-via
+- [ ] Documentar processo de cancelamento e geração de novo cartão
+- [ ] Incluir exemplos de uso e códigos de resposta
+- [ ] Documentar middleware de idempotência obrigatório
+
 ---
 
 ## 📊 Métricas de Sucesso

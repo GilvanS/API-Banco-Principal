@@ -42,22 +42,22 @@ npm start
 - ✅ Melhor performance
 - ✅ Ideal para produção
 
-## 👨‍💼 Criação do Admin
+## 👥 Criação de Usuários
 
-### ✅ Criação Automática
+**✅ IMPORTANTE**: 
 
-**O admin é criado automaticamente na primeira execução do servidor!**
+**Os usuários são criados através do endpoint de registro!**
 
-- **CPF**: `00000000000`
-- **Senha**: `AdminSenhaForte123`
-- **Role**: `admin`
+- **Endpoint**: `POST /api/v1/auth/register`
+- **Dados necessários**: nome, CPF, email, senha, telefone
+- **Papel**: `CLIENTE` (padrão)
 
-### 🔧 Criação Manual (Se Necessário)
-
-Se por algum motivo o admin não for criado automaticamente, execute:
+### 🔧 Exemplo de Registro
 
 ```bash
-npx ts-node src/database/seeds/create-admin.ts
+curl -X POST http://localhost:3000/api/v1/auth/register \
+-H "Content-Type: application/json" \
+-d '{"nomeCompleto":"João Silva","cpf":"12345678901","email":"joao@email.com","senha":"Senha123","telefone":"11987654321"}'
 ```
 
 **Quando usar:**
@@ -77,10 +77,10 @@ npx ts-node src/database/seeds/create-admin.ts
 # Verificar se o servidor está funcionando
 curl http://localhost:3000/health
 
-# Fazer login como admin
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"cpf":"00000000000","senha":"AdminSenhaForte123"}'
+# Fazer login como usuário
+curl -X POST http://localhost:3000/api/v1/auth/login \
+-H "Content-Type: application/json" \
+-d '{"cpf":"12345678901","senha":"Senha123"}'
 ```
 
 ## 🔄 Reset do Banco de Dados
@@ -101,13 +101,13 @@ Remove-Item -Path "banco.sqlite" -Force
 # 3. Reiniciar o servidor
 npm run dev
 
-# 4. Admin será criado automaticamente
+# 4. Sistema pronto para registro de usuários
 ```
 
 ## 🐛 Troubleshooting
 
 ### Erro: "CPF ou senha inválidos"
-- ✅ Verificar se o admin foi criado
+- ✅ Verificar se o sistema está funcionando
 - ✅ Executar o comando de criação manual se necessário
 
 ### Erro: "Porta 3000 já em uso"
@@ -138,4 +138,4 @@ Agora você pode usar a API normalmente! O sistema está configurado e funcionan
 **Próximos passos:**
 1. Testar com Postman (coleção incluída)
 2. Explorar a documentação Swagger
-3. Implementar funcionalidades adicionais 
+3. Implementar funcionalidades adicionais
