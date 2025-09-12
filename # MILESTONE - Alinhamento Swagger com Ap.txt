@@ -1,0 +1,35 @@
+# MILESTONE - Alinhamento Swagger com App Mobile
+
+## 📱 Visão Geral
+Plano para atualizar swagger.yaml para atender 100% aos requisitos do mobile.md, adicionando endpoints ausentes, schemas e validações.
+
+## 🎯 Objetivos
+- Documentar todos endpoints do mobile.md
+- Adicionar validações e regras de negócio
+- Garantir integração segura com app mobile
+
+## 📋 Análise de Lacunas\n- **Endpoints Ausentes:** POST /api/transactions/pix (para transferências PIX), POST /api/transactions/withdraw (para saques), POST /clientes e GET /clientes/:id (para cadastro e consulta de clientes).\n- **Inconsistências de Prefixo:** Endpoints no mobile.md usam /api/, enquanto swagger.yaml usa /api/v1/.\n- **Validações Faltantes:** Ausência de mínimos/máximos (ex: min PIX R$1,00, min transfer R$10,00, max depósito R$50.000,00, max saque R$5.000,00); descrição obrigatória em transferências; verificação de saldo.\n- **Melhorias em Schemas:** Adicionar seleção de bandeira no cadastro; incluir mais validações como senha mín. 6 chars; adicionar exemplos alinhados; registrar data/hora automática em transações.\n- **Outras:** Alinhar regras de negócio como bloqueio após tentativas inválidas, saldo inicial R$200,00, agência padrão 0001.
+
+## 📅 Plano de Etapas
+### Etapa 1: Análise e Verificação Inicial
+- [ ] Ação 1: Visualizar swagger.yaml completo
+- Prioridade: Alta
+- Prazo: Dia 1
+- Notas de Progresso: 
+
+### Etapa 2: Adicionar Endpoints para Conta e Transações
+- [ ] Ação 1: Inserir POST /api/transactions/pix
+- [ ] Ação 2: Atualizar schemas
+- Prioridade: Alta
+- Prazo: Dias 1-2
+- Notas de Progresso: 
+
+[E assim por diante para as 5 etapas]
+
+## ✅ Cronograma Sugerido
+- Semana 1: Etapas 1-3
+- Total: 5-7 dias
+
+## 🚀 Próximos Passos
+- Marque checkboxes conforme completar
+- Atualize notas para tracking
