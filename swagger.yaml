@@ -187,27 +187,142 @@ paths:
               schema:
                 $ref: '#/components/schemas/CardsResponse'
 
-  /api/v1/cards/request:
+  # Endpoint removido: /api/v1/cards/request
+  # Motivo: Com cartão múltiplo (débito + crédito), não é mais necessário solicitar cartão de crédito separadamente
+  # Os cartões são criados automaticamente na abertura da conta
+
+  /api/v1/cartoes/segunda-via:
     post:
       tags:
         - Cartões
-      summary: Solicitar cartão de crédito
-      description: Solicita um novo cartão de crédito para o usuário
+      summary: Solicitar segunda via de cartão
+      description: Solicita uma segunda via de cartão por motivo de perda, roubo ou danificação
       security:
         - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CardRequest'
+              $ref: '#/components/schemas/SecondCardRequest'
       responses:
         '201':
-          description: Cartão solicitado com sucesso
+          description: Segunda via solicitada com sucesso
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CardCreatedResponse'
+                $ref: '#/components/schemas/SecondCardResponse'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/cards/{cardId}/block:
+    put:
+      tags:
+        - Cartões
+      summary: Bloquear cartão
+      description: Bloqueia um cartão específico do usuário por motivos de segurança
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: ID do cartão a ser bloqueado
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Motivo do bloqueio
+                  example: "Suspeita de fraude"
+      responses:
+        '200':
+          description: Cartão bloqueado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardBlockResponse'
+        '400':
+          description: Cartão já está bloqueado ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Cartão não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/cards/{cardId}/unblock:
+    put:
+      tags:
+        - Cartões
+      summary: Desbloquear cartão
+      description: Desbloqueia um cartão previamente bloqueado
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: ID do cartão a ser desbloqueado
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cartão desbloqueado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardUnblockResponse'
+        '400':
+          description: Cartão já está ativo ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Cartão não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/transactions/deposit:
     post:
@@ -312,6 +427,177 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvestmentSummary'
+
+  /api/v1/investments/applications:
+    get:
+      tags:
+        - Investimentos
+      summary: Listar aplicações
+      description: Lista todas as aplicações de investimento do usuário com paginação
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Lista de aplicações
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentApplicationsResponse'
+
+  /api/v1/investments/simulate:
+    post:
+      tags:
+        - Investimentos
+      summary: Simular investimento
+      description: Simula um investimento com diferentes tipos e valores
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvestmentSimulationRequest'
+      responses:
+        '200':
+          description: Simulação de investimento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentSimulationResponse'
+
+  /api/v1/investments/apply:
+    post:
+      tags:
+        - Investimentos
+      summary: Aplicar em investimento
+      description: Realiza uma aplicação em investimento
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvestmentApplicationRequest'
+      responses:
+        '201':
+          description: Aplicação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentApplicationResponse'
+
+  /api/v1/investments/savings-program/configure:
+    put:
+      tags:
+        - Investimentos
+      summary: Configurar programa de poupança
+      description: Configura programa automático de poupança
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavingsProgramRequest'
+      responses:
+        '200':
+          description: Programa configurado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavingsProgramResponse'
+
+  /api/v1/investments/savings:
+    get:
+      tags:
+        - Investimentos
+      summary: Consultar poupança
+      description: Retorna informações sobre investimentos em poupança
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Informações da poupança
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavingsResponse'
+
+  /api/v1/investments/{investmentId}/yield:
+    get:
+      tags:
+        - Investimentos
+      summary: Consultar rendimento
+      description: Consulta o rendimento de um investimento específico
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: investmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Rendimento do investimento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentYieldResponse'
+
+  /api/v1/investments/{investmentId}/redeem:
+    post:
+      tags:
+        - Investimentos
+      summary: Resgatar investimento
+      description: Realiza o resgate total ou parcial de um investimento
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: investmentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvestmentRedeemRequest'
+      responses:
+        '200':
+          description: Resgate realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentRedeemResponse'
 
 components:
   securitySchemes:
@@ -530,6 +816,112 @@ components:
         cartao:
           $ref: '#/components/schemas/Card'
 
+    SecondCardRequest:
+      type: object
+      required:
+        - motivo
+      properties:
+        motivo:
+          type: string
+          enum: [perda, roubo, danificacao]
+          example: "perda"
+          description: "Motivo da solicitação da segunda via"
+        bandeira:
+          type: string
+          enum: [master, visa, elo, amex]
+          example: "visa"
+          description: "Bandeira do cartão (opcional)"
+
+    SecondCardResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Segunda via de cartão criada com sucesso"
+        cartaoAnterior:
+          type: object
+          properties:
+            id:
+              type: string
+            numeroCartao:
+              type: string
+              example: "****-****-****-1234"
+            status:
+              type: string
+              example: "CANCELADO"
+        novoCartao:
+          type: object
+          properties:
+            id:
+              type: string
+            numeroCartao:
+              type: string
+              example: "****-****-****-5678"
+            cvv:
+              type: string
+              example: "123"
+            dataVencimento:
+              type: string
+              format: date
+              example: "2029-12-31"
+            status:
+              type: string
+              example: "ATIVO"
+            tipoCartao:
+              type: string
+              example: "DEBITO"
+            bandeira:
+              type: string
+              example: "VISA"
+        usuario:
+          type: object
+          properties:
+            id:
+              type: string
+            nomeCompleto:
+              type: string
+            agencia:
+              type: string
+            numeroConta:
+              type: string
+
+    CardBlockResponse:
+      type: object
+      properties:
+        cardId:
+          type: string
+          example: "card-uuid-123"
+        status:
+          type: string
+          example: "BLOCKED"
+        reason:
+          type: string
+          example: "Bloqueio solicitado pelo usuário"
+        blockedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        message:
+          type: string
+          example: "Cartão bloqueado com sucesso"
+
+    CardUnblockResponse:
+      type: object
+      properties:
+        cardId:
+          type: string
+          example: "card-uuid-123"
+        status:
+          type: string
+          example: "ACTIVE"
+        unblockedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T11:00:00Z"
+        message:
+          type: string
+          example: "Cartão desbloqueado com sucesso"
+
     DepositRequest:
       type: object
       required:
@@ -668,6 +1060,271 @@ components:
         dataCriacao:
           type: string
           format: date-time
+
+    InvestmentApplicationsResponse:
+      type: object
+      properties:
+        investments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Investment'
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            totalPages:
+              type: integer
+
+    InvestmentSimulationRequest:
+      type: object
+      required:
+        - amount
+        - type
+        - period
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 100
+          example: 1000.00
+        type:
+          type: string
+          enum: [CDB, POUPANCA, TESOURO_DIRETO, FUNDOS]
+          example: "CDB"
+        period:
+          type: integer
+          minimum: 1
+          example: 12
+
+    InvestmentSimulationResponse:
+      type: object
+      properties:
+        simulation:
+          type: object
+          properties:
+            initialAmount:
+              type: number
+              format: float
+            finalAmount:
+              type: number
+              format: float
+            totalReturn:
+              type: number
+              format: float
+            returnPercentage:
+              type: number
+              format: float
+            monthlyReturn:
+              type: number
+              format: float
+            investmentType:
+              type: string
+            period:
+              type: integer
+            riskLevel:
+              type: string
+              enum: [BAIXO, MEDIO, ALTO]
+
+    InvestmentApplicationRequest:
+      type: object
+      required:
+        - amount
+        - type
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 100
+          example: 1000.00
+        type:
+          type: string
+          enum: [CDB, POUPANCA, TESOURO_DIRETO, FUNDOS]
+          example: "CDB"
+        name:
+          type: string
+          example: "CDB Banco Principal"
+        description:
+          type: string
+          example: "Investimento em CDB com rentabilidade de 110% do CDI"
+
+    InvestmentApplicationResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Investimento aplicado com sucesso"
+        investment:
+          type: object
+          properties:
+            investmentId:
+              type: string
+            type:
+              type: string
+            amount:
+              type: number
+              format: float
+            status:
+              type: string
+            applicationDate:
+              type: string
+              format: date-time
+
+    SavingsProgramRequest:
+      type: object
+      required:
+        - monthlyAmount
+        - dayOfMonth
+      properties:
+        monthlyAmount:
+          type: number
+          format: float
+          minimum: 50
+          example: 200.00
+        dayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 28
+          example: 15
+        autoIncrease:
+          type: boolean
+          example: true
+        increasePercentage:
+          type: number
+          format: float
+          example: 5.0
+
+    SavingsProgramResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Programa de poupança configurado com sucesso"
+        program:
+          type: object
+          properties:
+            monthlyAmount:
+              type: number
+              format: float
+            dayOfMonth:
+              type: integer
+            nextInvestment:
+              type: string
+              format: date-time
+            status:
+              type: string
+
+    SavingsResponse:
+      type: object
+      properties:
+        totalSavings:
+          type: number
+          format: float
+        monthlyYield:
+          type: number
+          format: float
+        totalYield:
+          type: number
+          format: float
+        savingsAccounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Investment'
+
+    InvestmentYieldResponse:
+      type: object
+      properties:
+        investment:
+          type: object
+          properties:
+            investmentId:
+              type: string
+            name:
+              type: string
+            type:
+              type: string
+            status:
+              type: string
+            performance:
+              type: object
+              properties:
+                initialAmount:
+                  type: number
+                  format: float
+                currentValue:
+                  type: number
+                  format: float
+                totalReturn:
+                  type: number
+                  format: float
+                returnPercentage:
+                  type: number
+                  format: float
+                investmentDate:
+                  type: string
+                  format: date-time
+                daysInvested:
+                  type: integer
+                maturityDate:
+                  type: string
+                  format: date-time
+            details:
+              type: object
+              properties:
+                returnRate:
+                  type: number
+                  format: float
+                currentYield:
+                  type: number
+                  format: float
+                canRedeem:
+                  type: boolean
+                description:
+                  type: string
+
+    InvestmentRedeemRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: float
+          description: "Valor a ser resgatado. Se não informado, resgata o valor total"
+          example: 500.00
+
+    InvestmentRedeemResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Resgate realizado com sucesso"
+        redemption:
+          type: object
+          properties:
+            investmentId:
+              type: string
+            redeemedAmount:
+              type: number
+              format: float
+            remainingAmount:
+              type: number
+              format: float
+            newAccountBalance:
+              type: number
+              format: float
+            redemptionDate:
+              type: string
+              format: date-time
+        account:
+          type: object
+          properties:
+            agencia:
+              type: string
+            conta:
+              type: string
 
     ErrorResponse:
       type: object
