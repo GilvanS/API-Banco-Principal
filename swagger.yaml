@@ -368,6 +368,102 @@ paths:
               schema:
                 $ref: '#/components/schemas/TransactionResponse'
 
+  /api/v1/transactions/transfer-by-cpf:
+    post:
+      tags:
+        - Transações
+      summary: Transferência por CPF
+      description: Realiza transferência resolvendo automaticamente agência e conta a partir do CPF informado
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - destinationCpf
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  example: 200.00
+                destinationCpf:
+                  type: string
+                  pattern: '^[0-9]{11}$'
+                  example: '12345678901'
+                description:
+                  type: string
+                  example: 'Transferência por CPF'
+      responses:
+        '201':
+          description: Transferência realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /api/v1/transactions/pix:
+    post:
+      tags:
+        - Transações
+      summary: Transferência PIX
+      description: Realiza uma transferência via PIX
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - pixKey
+                - pixKeyType
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  example: 150.00
+                pixKey:
+                  type: string
+                  example: '12345678901'
+                pixKeyType:
+                  type: string
+                  enum: [cpf, email]
+                  example: 'cpf'
+                description:
+                  type: string
+                  example: 'Pagamento de serviço via PIX'
+      responses:
+        '201':
+          description: PIX realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /api/v1/transactions/credit-bill/preview:
+    get:
+      tags:
+        - Transações
+      summary: Pré-visualizar fatura do cartão de crédito
+      description: Retorna a pré-visualização da fatura do cartão de crédito ativo do usuário sem efetuar pagamento
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Pré-visualização da fatura
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditBillPreviewResponse'
+
   /api/v1/transactions/credit-purchase:
     post:
       tags:
@@ -385,6 +481,39 @@ paths:
       responses:
         '201':
           description: Compra realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /api/v1/transactions/withdraw:
+    post:
+      tags:
+        - Transações
+      summary: Saque em conta
+      description: Realiza um saque da conta do usuário autenticado
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  example: 100.00
+                description:
+                  type: string
+                  example: 'Saque em conta'
+      responses:
+        '201':
+          description: Saque realizado com sucesso
           content:
             application/json:
               schema:
@@ -587,6 +716,307 @@ paths:
             type: string
             format: uuid
       requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvestmentRedeemRequest'
+      responses:
+        '200':
+          description: Resgate realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentRedeemResponse'
+
+/api/v1/clientes:
+  get:
+    tags:
+      - Clientes
+    summary: Listar clientes
+    description: Retorna a lista de clientes do sistema, sem incluir o campo de senha.
+    responses:
+      '200':
+        description: Lista de clientes
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "uuid-123"
+                  nomeCompleto:
+                    type: string
+                    example: "Maria Oliveira"
+                  cpf:
+                    type: string
+                    pattern: '^[0-9]{11}$'
+                    example: "98765432100"
+                  email:
+                    type: string
+                    format: email
+                    example: "maria.oliveira@example.com"
+                  agencia:
+                    type: string
+                    example: "0001"
+                  numeroConta:
+                    type: string
+                    example: "123456"
+                  saldo:
+                    type: number
+                    format: float
+                    example: 2500.50
+                  limiteCredito:
+                    type: number
+                    format: float
+                    example: 3000.00
+                  creditoUtilizado:
+                    type: number
+                    format: float
+                    example: 450.75
+                  ativo:
+                    type: boolean
+                    example: true
+                  contaBloqueada:
+                    type: boolean
+                    example: false
+                  limiteDebitoDiario:
+                    type: number
+                    format: float
+                    example: 5000.00
+                  tipoConta:
+                    type: string
+                    enum: [poupanca, corrente]
+                    example: corrente
+                  telefone:
+                    type: string
+                    nullable: true
+                    example: "11987654321"
+                  dataCriacao:
+                    type: string
+                    format: date-time
+                  dataAtualizacao:
+                    type: string
+                    format: date-time
+                  cartoes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        tipo:
+                          type: string
+                          enum: [debito, credito, multiplo]
+                        bandeira:
+                          type: string
+                          enum: [master, mastercard, visa, elo, amex]
+                        numero:
+                          type: string
+                          example: "5123 4567 8901 2345"
+                        status:
+                          type: string
+                          enum: [ativo, bloqueado, cancelado, inativo]
+                        limite:
+                          type: number
+                          format: float
+                          nullable: true
+                        faturaAtual:
+                          type: number
+                          format: float
+                        limiteDisponivel:
+                          type: number
+                          format: float
+
+  /api/v1/payments/boleto:
+    post:
+      tags:
+        - Transações
+      summary: Pagamento de boleto
+      description: Realiza o pagamento de um boleto bancário pela linha digitável
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BoletoPaymentRequest'
+      responses:
+        '201':
+          description: Boleto pago com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /api/v1/account/invoice:
+    get:
+      tags:
+        - Conta
+      summary: Consultar fatura atual do cartão de crédito
+      description: Retorna informações resumidas da fatura atual do cartão de crédito do usuário
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Informações da fatura
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditBillPreviewResponse'
+
+  /api/v1/transactions/transfer-bank:
+    post:
+      tags:
+        - Transações
+      summary: Transferência por agência e conta
+      description: Realiza transferência informando agência e conta do destinatário
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankTransferRequest'
+      responses:
+        '201':
+          description: Transferência realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /api/v1/pix/keys:
+    get:
+      tags:
+        - Transações
+      summary: Listar chaves PIX do usuário
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de chaves PIX
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PixKeysResponse'
+    post:
+      tags:
+        - Transações
+      summary: Cadastrar chave PIX
+      description: Cadastra uma nova chave PIX para a conta do usuário
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PixKeyCreateRequest'
+      responses:
+        '201':
+          description: Chave PIX cadastrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PixKey'
+
+  /api/v1/transactions/transfer-pix:
+    post:
+      tags:
+        - Transações
+      summary: Transferência via chave PIX
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PixTransferRequest'
+      responses:
+        '201':
+          description: PIX realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /api/v1/cards/block:
+    post:
+      tags:
+        - Cartões
+      summary: Bloquear cartão do usuário
+      description: Bloqueia o cartão ativo do usuário logado
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: 'Solicitado pelo usuário'
+      responses:
+        '200':
+          description: Cartão bloqueado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardBlockResponse'
+
+  /api/v1/cards/reissue:
+    post:
+      tags:
+        - Cartões
+      summary: Solicitar 2ª via do cartão
+      description: Solicita a reemissão do cartão do usuário
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Solicitação registrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Solicitação de 2ª via registrada.'
+
+  /api/v1/investments:
+    get:
+      tags:
+        - Investimentos
+      summary: Listar investimentos do usuário
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de investimentos do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentsList'
+
+  /api/v1/investments/redeem:
+    post:
+      tags:
+        - Investimentos
+      summary: Resgatar investimento por corpo da requisição
+      description: Resgata parcial ou totalmente um investimento informando o ID e valor desejado
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -922,6 +1352,118 @@ components:
           type: string
           example: "Cartão desbloqueado com sucesso"
 
+    BoletoPaymentRequest:
+      type: object
+      required:
+        - digitableLine
+        - amount
+      properties:
+        digitableLine:
+          type: string
+          description: Linha digitável do boleto
+          example: '23793381286007000004123000012305784400000010000'
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 100.00
+        dueDate:
+          type: string
+          format: date
+          example: '2025-05-10'
+        description:
+          type: string
+          example: 'Pagamento de boleto de serviço'
+
+    BankTransferRequest:
+      type: object
+      required:
+        - amount
+        - destinationAgency
+        - destinationAccount
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 250.00
+        destinationAgency:
+          type: string
+          example: '0001'
+        destinationAccount:
+          type: string
+          example: '123456-7'
+        destinationName:
+          type: string
+          example: 'Maria Santos'
+        description:
+          type: string
+          example: 'Transferência por agência/conta'
+
+    PixKey:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 'key-uuid-1'
+        type:
+          type: string
+          enum: [cpf, email, phone, random]
+        value:
+          type: string
+          example: '12345678901'
+        createdAt:
+          type: string
+          format: date-time
+
+    PixKeyCreateRequest:
+      type: object
+      required: [type, value]
+      properties:
+        type:
+          type: string
+          enum: [cpf, email, phone, random]
+          example: 'cpf'
+        value:
+          type: string
+          example: '12345678901'
+
+    PixKeysResponse:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/PixKey'
+
+    PixTransferRequest:
+      type: object
+      required: [amount, key, keyType]
+      properties:
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 120.50
+        key:
+          type: string
+          example: 'joao@example.com'
+        keyType:
+          type: string
+          enum: [cpf, email, phone, random]
+          example: 'email'
+        description:
+          type: string
+          example: 'Pagamento via PIX por chave'
+
+    InvestmentsList:
+      type: object
+      properties:
+        investments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Investment'
+
     DepositRequest:
       type: object
       required:
@@ -940,40 +1482,53 @@ components:
       type: object
       required:
         - amount
-        - destinationAccount
-        - destinationAgency
-        - destinationName
       properties:
         amount:
           type: number
           format: float
           minimum: 0.01
           example: 200.00
-        destinationAccount:
-          type: string
-          example: "654321"
-        destinationAgency:
-          type: string
-          example: "0002"
-        destinationName:
-          type: string
-          example: "Maria Santos"
         description:
           type: string
-          example: "Transferência PIX"
+          example: "Transferência entre contas"
+        transferType:
+          type: string
+          enum: [TED, DOC]
+          example: "TED"
+        destination:
+          oneOf:
+            - type: object
+              required: [destinationAccount, destinationAgency]
+              properties:
+                destinationAccount:
+                  type: string
+                  example: "654321"
+                destinationAgency:
+                  type: string
+                  example: "0002"
+                destinationName:
+                  type: string
+                  example: "Maria Santos"
+            - type: object
+              required: [destinationCpf]
+              properties:
+                destinationCpf:
+                  type: string
+                  pattern: '^[0-9]{11}$'
+                  example: "12345678901"
 
     CreditPurchaseRequest:
       type: object
       required:
         - amount
-        - merchant
+        - establishment
       properties:
         amount:
           type: number
           format: float
           minimum: 0.01
           example: 150.00
-        merchant:
+        establishment:
           type: string
           example: "Supermercado ABC"
         description:
@@ -984,41 +1539,101 @@ components:
       type: object
       required:
         - amount
-        - billType
       properties:
         amount:
           type: number
           format: float
           minimum: 0.01
           example: 300.00
-        billType:
-          type: string
-          enum: [CREDIT_CARD, FINANCING, UTILITIES, INSURANCE]
-          example: "CREDIT_CARD"
         description:
           type: string
-          example: "Pagamento de fatura do cartão"
+          example: "Pagamento de fatura do cartão de crédito"
 
     TransactionResponse:
       type: object
       properties:
         transactionId:
           type: string
+          description: Identificador da transação, equivalente ao movimentacaoId persistido no sistema
           example: "txn-uuid-123"
         type:
           type: string
-          enum: [DEPOSIT, TRANSFER, CREDIT_PURCHASE, BILL_PAYMENT]
+          enum: [DEPOSIT, WITHDRAW, TRANSFER, PIX, CREDIT_PURCHASE, BILL_PAYMENT]
         amount:
           type: number
           format: float
         status:
           type: string
           enum: [PENDING, COMPLETED, FAILED]
-        timestamp:
+        date:
           type: string
           format: date-time
         description:
           type: string
+        newBalance:
+          type: number
+          format: float
+          description: Saldo resultante após a transação (quando aplicável)
+        fee:
+          type: number
+          format: float
+          description: Taxa cobrada na transação (quando aplicável)
+        destination:
+          type: object
+          description: Informações do destinatário (apenas em transferências)
+          properties:
+            account:
+              type: string
+            agency:
+              type: string
+            name:
+              type: string
+            cpf:
+              type: string
+        pixKey:
+          type: string
+          description: Chave PIX utilizada (quando aplicável)
+        pixKeyType:
+          type: string
+          enum: [cpf, email]
+          description: Tipo da chave PIX (quando aplicável)
+        transactionCode:
+          type: string
+          description: Código de referência da transação (quando aplicável)
+        cardId:
+          type: string
+          description: Identificador do cartão relacionado (quando aplicável)
+
+    CreditBillPreviewResponse:
+      type: object
+      properties:
+        cardId:
+          type: string
+        cardNumber:
+          type: string
+        totalAmount:
+          type: number
+          format: float
+        minimumAmount:
+          type: number
+          format: float
+        limit:
+          type: number
+          format: float
+        availableLimit:
+          type: number
+          format: float
+        dueDate:
+          type: string
+          format: date
+        closingDate:
+          type: string
+          format: date
+        revolvingInterest:
+          type: number
+          format: float
+        hasOpenBill:
+          type: boolean
 
     InvestmentSummary:
       type: object
@@ -1347,6 +1962,8 @@ tags:
     description: Endpoints de sistema e monitoramento
   - name: Autenticação
     description: Endpoints de autenticação e autorização
+  - name: Clientes
+    description: Gestão de clientes (criação, consulta e listagem)
   - name: Conta
     description: Gerenciamento de conta do usuário
   - name: Cartões

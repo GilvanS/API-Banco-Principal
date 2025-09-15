@@ -107,7 +107,7 @@ export class TransacaoService {
                 idempotencyKey: dados.idempotencyKey
             });
 
-            await queryRunner.manager.save(Movimentacao, movimentacaoEnviada);
+            const savedEnviada = await queryRunner.manager.save(Movimentacao, movimentacaoEnviada);
             await queryRunner.manager.save(Movimentacao, movimentacaoRecebida);
 
             await queryRunner.commitTransaction();
@@ -121,6 +121,7 @@ export class TransacaoService {
             return {
                 mensagem: "Transferência realizada com sucesso",
                 dados: {
+                    movimentacaoId: savedEnviada.id,
                     agenciaOrigem: dados.agenciaOrigem,
                     contaOrigem: dados.contaOrigem,
                     nomeOrigem: dados.nomeOrigem,
@@ -186,10 +187,9 @@ export class TransacaoService {
                     }
                 });
             } else if (dados.tipoPix === "email") {
-                // Assumindo que o email está no campo nomeCompleto ou criando um campo email
                 contaDestino = await this.usuarioRepository.findOne({
                     where: {
-                        nomeCompleto: dados.pixDestino, // Temporário - ideal seria ter campo email
+                        email: dados.pixDestino,
                         ativo: true,
                         contaBloqueada: false
                     }
@@ -242,7 +242,7 @@ export class TransacaoService {
                 idempotencyKey: dados.idempotencyKey
             });
 
-            await queryRunner.manager.save(Movimentacao, movimentacaoEnviada);
+            const savedEnviadaPix = await queryRunner.manager.save(Movimentacao, movimentacaoEnviada);
             await queryRunner.manager.save(Movimentacao, movimentacaoRecebida);
 
             await queryRunner.commitTransaction();
@@ -256,6 +256,7 @@ export class TransacaoService {
             return {
                 mensagem: "Transferência PIX realizada com sucesso",
                 dados: {
+                    movimentacaoId: savedEnviadaPix.id,
                     cpfOrigem: dados.cpfOrigem,
                     pixDestino: dados.pixDestino,
                     tipoPix: dados.tipoPix,
@@ -359,6 +360,7 @@ export class TransacaoService {
         numeroCartao: string;
         valor: number;
         estabelecimento: string;
+        descricao?: string;
         idempotencyKey?: string;
     }) {
         try {
@@ -386,12 +388,14 @@ export class TransacaoService {
             const movimentacao = this.repository.create({
                 tipo: "compra_credito",
                 valor: dados.valor,
-                descricao: `Compra com cartão de crédito ${dados.numeroCartao} no estabelecimento: ${dados.estabelecimento}`,
+                descricao: dados.descricao && dados.descricao.trim().length > 0
+                    ? dados.descricao
+                    : `Compra com cartão de crédito ${dados.numeroCartao} no estabelecimento: ${dados.estabelecimento}`,
                 usuarioConta: usuario,
                 idempotencyKey: dados.idempotencyKey
             });
 
-            await this.repository.save(movimentacao);
+            const savedCompra = await this.repository.save(movimentacao);
 
             LoggerService.info("Compra com crédito registrada com sucesso", {
                 numeroCartao: dados.numeroCartao,
@@ -402,6 +406,7 @@ export class TransacaoService {
             return {
                 mensagem: "Compra registrada com sucesso",
                 dados: {
+                    movimentacaoId: savedCompra.id,
                     numeroCartao: dados.numeroCartao,
                     estabelecimento: dados.estabelecimento,
                     valor: dados.valor,
@@ -457,7 +462,7 @@ export class TransacaoService {
                 idempotencyKey: dados.idempotencyKey
             });
 
-            await this.repository.save(movimentacao);
+            const savedDeposito = await this.repository.save(movimentacao);
 
             LoggerService.info("Depósito realizado com sucesso", {
                 agencia: dados.agencia,
@@ -468,6 +473,7 @@ export class TransacaoService {
             return {
                 mensagem: "Depósito realizado com sucesso",
                 dados: {
+                    movimentacaoId: savedDeposito.id,
                     agencia: dados.agencia,
                     conta: dados.conta,
                     valor: dados.valor,
@@ -529,7 +535,7 @@ export class TransacaoService {
                 idempotencyKey: dados.idempotencyKey
             });
 
-            await this.repository.save(movimentacao);
+            const savedPagamento = await this.repository.save(movimentacao);
 
             LoggerService.info("Fatura paga com sucesso", {
                 usuarioId: dados.usuarioId,
@@ -539,6 +545,7 @@ export class TransacaoService {
             return {
                 mensagem: "Fatura paga com sucesso",
                 dados: {
+                    movimentacaoId: savedPagamento.id,
                     valorPago: valorAPagar,
                     creditoUtilizado: usuario.creditoUtilizado,
                     saldoAtual: usuario.saldo,

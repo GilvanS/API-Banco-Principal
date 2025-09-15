@@ -1,0 +1,153 @@
+Milestone: Alinhamento APP x API (v2)
+Objetivo: Implementar as correções e melhorias validadas no app (login/cadastro OK) e alinhar a API para suportar pagamentos (boleto x fatura), transferências por agência+conta, cadastro/uso de chaves PIX, melhorias de UX (rolagem e ações principais), cartão (número, nome, bloqueio e 2ª via), investimentos (consultar e resgatar), visualização de fatura e acesso rápido ao extrato.
+
+Escopo por Frentes
+1) Mobile App (React Native)
+2) Backend Mock (backend/server.js) – suporte imediato ao app
+3) API Principal (API-Banco-Principal) – documentação/Swagger e alinhamento
+4) Testes e Operação
+
+Padronizações
+- Rotas sob /api/v1/ (mantido)
+- Respostas com { success, message, data } no mock; na API Principal seguir schemas do Swagger
+- Todas as operações transacionais devem aceitar header Idempotency-Key (planejado para API Principal)
+
+Tarefas Detalhadas (com passos executáveis)
+
+A) UX – Dashboard com rolagem + ações principais (Item #6 e #10)
+Arquivos: mobile-app/screens/DashboardScreen.js, mobile-app/services/api.js (se necessário), mobile-app/components/ (cartão)
+- [ ] Envolver conteúdo principal em <ScrollView> ou <FlatList> para permitir rolagem vertical
+- [ ] Reestruturar grade de ações para exibir ao menos 8 botões: Transferir, PIX, Pagar, Investir, Fatura, Extrato, Bloquear Cartão, 2ª Via Cartão
+- [ ] Transformar o “Saldo da conta” em botão/Pressable que navega para StatementScreen (acesso rápido ao extrato) – (Item #10)
+Critérios de aceitação:
+- É possível rolar e visualizar todas as opções; toque no saldo navega para o extrato
+
+B) Pagamento – separar Boleto x Fatura (Item #1 e #9)
+Arquivos: mobile-app/screens/DashboardScreen.js (modal), mobile-app/screens/CreditScreen.js ou nova PaymentScreen, services/api.js; backend/server.js
+Mobile
+- [ ] Atualizar modal “Pagar” com tabs: Boleto | Fatura
+- [ ] Boleto: inputs { linhaDigitavel, valor, descricao? } -> POST /api/v1/payments/boleto
+- [ ] Fatura: exibir total em aberto e botão “Pagar fatura” -> POST /api/v1/transactions/pay-bill
+- [ ] Adicionar ação “Fatura” na grade (abre tela/aba de visualização de fatura) – (Item #9)
+Backend (mock)
+- [ ] POST /api/v1/payments/boleto { linhaDigitavel, valor } -> registra pagamento e adiciona lançamento no extrato
+- [ ] GET  /api/v1/account/invoice -> retorna fatura simulada (itens e total)
+- [ ] POST /api/v1/transactions/pay-bill { valor } -> abate do creditoUtilizado e do saldo da conta (se saldo >= valor)
+Critérios de aceitação:
+- Pagamento de boleto retorna sucesso; fatura é listada e pode ser paga, afetando saldo e limite usado
+
+C) Transferência por Agência+Conta (separada do PIX) (Item #2)
+Arquivos: DashboardScreen.js (modal de transferir), services/api.js; backend/server.js
+Mobile
+- [ ] Em “Transferir”, manter duas tabs: PIX | Banco
+- [ ] Tab Banco: inputs { agencia, conta, valor, descricao? } -> POST /api/v1/transactions/transfer-bank
+- [ ] Tab PIX: inputs existentes (CPF, e-mail ou chave) – ver seção D
+Backend (mock)
+- [ ] POST /api/v1/transactions/transfer-bank { agencia, conta, valor, descricao } -> debita do remetente (user do token) e credita no destinatário (busca por agencia+conta)
+Critérios de aceitação:
+- É possível transferir via agência+conta; PIX permanece disponível na sua própria aba
+
+D) PIX – cadastro e uso (Item #4)
+Arquivos: services/api.js, nova tela simples ou modal para cadastro de chaves (opcional);
+Backend (mock)
+- [ ] POST /api/v1/pix/keys { type: "CPF"|"EMAIL", key: string } -> cria/associa chave ao usuário autenticado
+- [ ] GET  /api/v1/pix/keys -> lista chaves do usuário
+- [ ] POST /api/v1/transactions/transfer-pix { key, valor, descricao? } -> transfere pela chave
+Mobile
+- [ ] Adicionar ação “PIX” com opções: Cadastrar Chave | Transferir via Chave
+Critérios de aceitação:
+- Usuário consegue registrar chaves (CPF e e-mail) e transferir usando uma chave cadastrada
+
+E) Cartão – número + nome, bloqueio e 2ª via (Item #3, #7 e #11)
+Arquivos: mobile-app/components/Card (ou dentro do Dashboard), services/api.js; backend/server.js
+Mobile
+- [ ] Exibir no componente do cartão: número mascarado (ex: 1214 **** **** 1234), nome do titular e validade
+- [ ] Remover toast “Compra ativada”. Substituir botão por “Solicitar 2ª via do cartão” na grade
+- [ ] Adicionar ação “Bloquear Cartão” (toggle: bloquear/desbloquear)
+Backend (mock)
+- [ ] POST /api/v1/cards/block { blocked: true|false } -> atualiza status do cartão do usuário
+- [ ] POST /api/v1/cards/reissue -> registra pedido de 2ª via e adiciona log no extrato
+Critérios de aceitação:
+- Cartão exibe número/nome; é possível bloquear/desbloquear e solicitar 2ª via; toast antigo removido
+
+F) Investimentos – consultar e resgatar (Item #8)
+Arquivos: services/api.js; nova modificação na tela/fluxo Investir
+Backend (mock)
+- [ ] GET  /api/v1/investments -> lista posições do usuário
+- [ ] POST /api/v1/investments/redeem { investmentId, valor } -> realiza resgate parcial/total
+Mobile
+- [ ] Na ação “Investir”, adicionar abas: Aplicar | Consultar | Resgatar
+Critérios de aceitação:
+- Usuário consegue consultar posições e efetuar resgate com retorno de saldo no extrato
+
+G) API Principal – atualização de documentação e alinhamento (Item #5)
+Arquivos: API-Banco-Principal/swagger.yaml, rotas em src/routes/* (quando aplicável)
+- [ ] Documentar novos endpoints: payments/boleto, account/invoice, transactions/pay-bill, transactions/transfer-bank, pix/keys (GET/POST), transactions/transfer-pix, cards/block, cards/reissue, investments (GET) e investments/redeem
+- [ ] Padronizar schemas de resposta e erros; adicionar exemplos
+- [ ] Atualizar Postman Collections relacionadas
+Critérios de aceitação:
+- Swagger atualizado compila sem erros; coleções Postman executam 200 OK no fluxo completo
+
+H) Testes e Operação
+- [ ] Scripts rápidos (ou requests) para: cadastro -> login -> criar chave PIX -> transferir (bank e pix) -> pagar boleto -> listar fatura -> pagar fatura -> consultar/resgatar investimento -> conferir extrato
+- [ ] Verificar /health no mobile e no desktop; manter server em 0.0.0.0:3000
+
+Detalhes Técnicos dos Novos Endpoints (Mock)
+1) POST /api/v1/transactions/transfer-bank
+Request: { agencia: string, conta: string, valor: number, descricao?: string }
+Response: { success: true, message: "Transferência bancária realizada", data: { saldoAtual, transacaoId } }
+
+2) POST /api/v1/pix/keys
+Request: { type: "CPF"|"EMAIL", key: string }
+Response: { success: true, message: "Chave PIX cadastrada", data: { id, type, key } }
+
+3) GET /api/v1/pix/keys
+Response: { success: true, data: [ { id, type, key } ] }
+
+4) POST /api/v1/transactions/transfer-pix
+Request: { key: string, valor: number, descricao?: string }
+Response: { success: true, message: "Transferência PIX realizada", data: { saldoAtual, transacaoId } }
+
+5) GET /api/v1/account/invoice
+Response: { success: true, data: { total: number, vencimento: string, itens: [ { id, descricao, valor, data } ] } }
+
+6) POST /api/v1/transactions/pay-bill
+Request: { valor: number }
+Response: { success: true, message: "Fatura paga com sucesso", data: { creditoUtilizado, saldoAtual } }
+
+7) POST /api/v1/payments/boleto
+Request: { linhaDigitavel: string, valor: number }
+Response: { success: true, message: "Boleto pago com sucesso", data: { comprovanteId } }
+
+8) POST /api/v1/cards/block
+Request: { blocked: boolean }
+Response: { success: true, message: "Cartão atualizado", data: { blocked } }
+
+9) POST /api/v1/cards/reissue
+Request: {}
+Response: { success: true, message: "Solicitação de 2ª via registrada", data: { protocolo } }
+
+10) GET /api/v1/investments
+Response: { success: true, data: [ { id, nome, valorInvestido, valorAtual } ] }
+
+11) POST /api/v1/investments/redeem
+Request: { investmentId: string, valor: number }
+Response: { success: true, message: "Resgate efetuado", data: { saldoAtual, investimento: { id, valorAtual } } }
+
+Cronograma Sugerido (2 sprints curtas)
+Sprint 1 (Backend Mock + UX base): A, B(backend), C(backend), D(backend), E(backend), G (Swagger inicial)
+Sprint 2 (Mobile + Finalização): A (mobile), B (mobile), C (mobile), D (mobile), E (mobile), F, G (final), H
+
+Checklist de Aceitação Final
+- [ ] App com rolagem e todas as ações visíveis
+- [ ] Transferência por Agência+Conta funcionando e distinta de PIX
+- [ ] Pagamentos: Boleto ok; Fatura listada e paga com sucesso
+- [ ] PIX: cadastro de chaves e transferência por chave
+- [ ] Cartão: número/nome visíveis, bloqueio/2ª via operando
+- [ ] Investimentos: consultar e resgatar
+- [ ] Swagger/Postman atualizados
+- [ ] Botão de saldo abre extrato
+
+Observações
+- Manter o servidor exposto em 0.0.0.0 para acesso do app no celular
+- Toda nova rota do mock deve ter logs claros em backend/server.js para depuração rápida

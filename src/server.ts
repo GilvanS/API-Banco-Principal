@@ -12,7 +12,7 @@ import { LoggerService } from "./services/LoggerService";
 import authRoutes from "./routes/authRoutes";
 import clienteRoutes from "./routes/clienteRoutes";
 import cartaoRoutes from "./routes/cartaoRoutes";
-import transacaoRoutes from "./routes/transacaoRoutes";
+
 import accountRoutes from "./routes/accountRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import cardRoutes from "./routes/cardRoutes";
@@ -54,13 +54,15 @@ const apiV1Router = express.Router();
 apiV1Router.use("/auth", authRoutes);
 apiV1Router.use("/clientes", clienteRoutes);
 apiV1Router.use("/cartoes", cartaoRoutes);
-apiV1Router.use("/transacoes", transacaoRoutes);
+
 
 // Rotas da refatoração movidas para /api/v1
 apiV1Router.use("/account", accountRoutes);
 apiV1Router.use("/transactions", transactionRoutes);
 apiV1Router.use("/cards", cardRoutes);
 apiV1Router.use("/investments", investmentRoutes);
+// Compatibilidade PT-BR para testes legados
+apiV1Router.use("/investimentos", investmentRoutes);
 
 // Rotas de consulta movidas para /api/v1
 apiV1Router.use("/contas", contaRoutes);

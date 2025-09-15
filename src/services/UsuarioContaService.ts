@@ -14,6 +14,8 @@ export class UsuarioContaService {
         cpf: string;
         senha: string;
         email?: string;
+        telefone?: string;
+        endereco?: string;
         tipoConta?: TipoConta;
         agencia?: string;
         numeroConta?: string;
@@ -42,6 +44,8 @@ export class UsuarioContaService {
                 cpf: dados.cpf,
                 senha: senhaHash,
                 email: dados.email,
+                telefone: dados.telefone,
+                endereco: dados.endereco,
                 tipoConta: dados.tipoConta || TipoConta.CORRENTE,
                 agencia,
                 numeroConta,
@@ -256,7 +260,7 @@ export class UsuarioContaService {
         notificacoesEmail?: boolean;
         notificacoesSms?: boolean;
         telefone?: string;
-        email?: string;
+        email?: string | null;
         endereco?: string;
     }) {
         try {
@@ -281,7 +285,7 @@ export class UsuarioContaService {
                 cliente.telefone = configuracoes.telefone;
             }
             if (configuracoes.email !== undefined) {
-                cliente.email = configuracoes.email;
+                cliente.email = configuracoes.email as any;
             }
             if (configuracoes.endereco !== undefined) {
                 cliente.endereco = configuracoes.endereco;
@@ -297,6 +301,40 @@ export class UsuarioContaService {
             return cliente;
         } catch (error) {
             LoggerService.error("Erro ao atualizar configurações", error);
+            throw error;
+        }
+    }
+
+    // Novo método específico para atualizar o e-mail (usado nas chaves PIX)
+    static async atualizarEmail(id: string, email: string | null) {
+        try {
+            const cliente = await this.repository.findOne({ where: { id } });
+            if (!cliente) {
+                throw new Error("Cliente não encontrado");
+            }
+
+            cliente.email = email as any; // aceita null
+            await this.repository.save(cliente);
+
+            LoggerService.info("Email atualizado", {
+                clienteId: id,
+                email
+            });
+
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao atualizar email", error);
+            throw error;
+        }
+    }
+
+    // === Novos utilitários para chaves PIX (email) ===
+    static async buscarPorEmail(email: string) {
+        try {
+            const cliente = await this.repository.findOne({ where: { email } });
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao buscar cliente por email", error);
             throw error;
         }
     }
