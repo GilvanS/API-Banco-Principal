@@ -1,0 +1,97 @@
+{
+  "id": "newman-test-env",
+  "name": "Newman Test Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "enabled": true
+    },
+    {
+      "key": "userToken",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "apiVersion",
+      "value": "v1",
+      "enabled": true
+    },
+    {
+      "key": "testCpf",
+      "value": "11111111111",
+      "enabled": true
+    },
+    {
+      "key": "testPassword",
+      "value": "Teste123@",
+      "enabled": true
+    },
+    {
+      "key": "contentType",
+      "value": "application/json",
+      "enabled": true
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "cardId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "idempotencyKey",
+      "value": "test-key-123",
+      "enabled": true
+    },
+    {
+      "key": "cardReason",
+      "value": "Cartão perdido",
+      "enabled": true
+    },
+    {
+      "key": "cardBrand",
+      "value": "Visa",
+      "enabled": true
+    },
+    {
+      "key": "transferAmount",
+      "value": "100.00",
+      "enabled": true
+    },
+    {
+      "key": "transferDescription",
+      "value": "Teste de transferência",
+      "enabled": true
+    },
+    {
+      "key": "recipientCpf",
+      "value": "98765432100",
+      "enabled": true
+    },
+    {
+      "key": "pixKey",
+      "value": "test@email.com",
+      "enabled": true
+    },
+    {
+      "key": "pixAmount",
+      "value": "50.00",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

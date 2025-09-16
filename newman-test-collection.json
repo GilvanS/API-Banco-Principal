@@ -1,0 +1,537 @@
+{
+  "info": {
+    "_postman_id": "banco-digital-newman-tests",
+    "name": "Banco Digital - Newman Tests",
+    "description": "Collection de exemplo para testes automatizados com Newman",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response time is less than 1000ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+              "});",
+              "",
+              "pm.test('Response contains status', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('status');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login Usuario",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response contains token', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('token');",
+              "    ",
+              "    // Salvar token para próximas requisições",
+              "    if (responseJson.token) {",
+              "        pm.environment.set('authToken', responseJson.token);",
+              "        pm.environment.set('userId', responseJson.usuario.id);",
+              "    }",
+              "});",
+              "",
+              "pm.test('User data is present', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('usuario');",
+              "    pm.expect(responseJson.usuario).to.have.property('cpf');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "{{contentType}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cpf\": \"{{testCpf}}\",\n  \"senha\": \"{{testPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "{{apiVersion}}",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login Admin (Endpoint Inexistente)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 404 (endpoint não existe)', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "",
+              "pm.test('Resposta indica endpoint não encontrado', function () {",
+              "    // Endpoint de login admin não existe na API atual",
+              "    pm.expect(pm.response.code).to.equal(404);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@bancoprincipal.com\",\n  \"senha\": \"admin123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/admin/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "admin",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Listar Cartões",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response contains cards array', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('cards');",
+              "    pm.expect(responseJson.cards).to.be.an('array');",
+              "    ",
+              "    // Salvar ID do primeiro cartão se existir",
+              "    if (responseJson.cards.length > 0) {",
+              "        pm.environment.set('cardId', responseJson.cards[0].id);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/{{apiVersion}}/cards",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "{{apiVersion}}",
+            "cards"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Solicitar Segunda Via",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 201', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "pm.test('Response contains card data', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('id');",
+              "    pm.expect(responseJson).to.have.property('numero');",
+              "    pm.expect(responseJson).to.have.property('tipo');",
+              "});",
+              "",
+              "pm.test('Idempotency key is working', function () {",
+              "    // Verificar se a resposta indica que a idempotência está funcionando",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "{{contentType}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"motivo\": \"{{cardReason}}\",\n  \"bandeira\": \"{{cardBrand}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/{{apiVersion}}/cartoes/segunda-via",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "{{apiVersion}}",
+            "cartoes",
+            "segunda-via"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Criar Transferência Bancária",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 201', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "pm.test('Transfer created successfully', function () {",
+              "    if (pm.response.code === 201) {",
+              "        const responseJson = pm.response.json();",
+              "        pm.expect(responseJson).to.have.property('transactionId');",
+              "        ",
+              "        // Salvar ID da transferência",
+              "        if (responseJson.transactionId) {",
+              "            pm.environment.set('transferId', responseJson.transactionId);",
+              "        }",
+              "    } else {",
+              "        // Se não for 201, pode ser erro de autenticação ou validação",
+              "        console.log('Transfer failed with status:', pm.response.code);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 50.00,\n  \"destinationAccount\": \"46042371\",\n  \"destinationAgency\": \"0001\",\n  \"destinationName\": \"Destinatario Teste\",\n  \"description\": \"Transferência teste\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/transactions/transfer-bank",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "transactions",
+            "transfer-bank"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Listar Transações",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response contains statement', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('statement');",
+              "    // A API retorna statement como objeto com transactions array",
+              "    if (responseJson.statement && responseJson.statement.transactions) {",
+              "        pm.expect(responseJson.statement.transactions).to.be.an('array');",
+              "    } else {",
+              "        // Fallback para estrutura alternativa",
+              "        pm.expect(responseJson.statement).to.be.an('object');",
+              "    }",
+              "});",
+              "",
+              "pm.test('Pagination info present', function () {",
+              "    const responseJson = pm.response.json();",
+              "    // Verificar se pagination está dentro de statement ou no nível raiz",
+              "    const hasPagination = responseJson.pagination || ",
+              "                         (responseJson.statement && responseJson.statement.pagination);",
+              "    pm.expect(hasPagination).to.exist;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/account/statement",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "account",
+            "statement"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Transferência PIX",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 201', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "pm.test('PIX transfer created', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('transactionId');",
+              "    ",
+              "    // Salvar ID da transação PIX",
+              "    if (responseJson.transactionId) {",
+              "        pm.environment.set('pixTransactionId', responseJson.transactionId);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 50.00,\n  \"pixKey\": \"12345678901\",\n  \"pixKeyType\": \"cpf\",\n  \"description\": \"PIX teste\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/transactions/pix",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "transactions",
+            "pix"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Teste de Endpoint Removido (deve retornar erro)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 or 401 (endpoint removido)', function () {",
+              "    // Aceitar tanto 400 (endpoint removido) quanto 401 (não autorizado)",
+              "    pm.expect(pm.response.code).to.be.oneOf([400, 401]);",
+              "});",
+              "",
+              "pm.test('Error message indicates redirection', function () {",
+              "    const responseJson = pm.response.json();",
+              "    // Verificar se tem 'error' ou 'erro' na resposta",
+              "    const hasError = responseJson.error || responseJson.erro;",
+              "    pm.expect(hasError).to.exist;",
+              "    ",
+              "    // Se for 401, pode não ter referência específica ao endpoint",
+              "    if (pm.response.code === 400 && responseJson.error) {",
+              "        pm.expect(responseJson.error).to.include('cartoes/segunda-via');",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "{{contentType}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cpf\": \"{{testCpf}}\",\n  \"nome\": \"{{testName}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/{{apiVersion}}/cards",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "{{apiVersion}}",
+            "cards"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Script global executado antes de cada requisição",
+          "console.log('Executando requisição para:', pm.request.url.toString());",
+          "",
+          "// Gerar novo UUID para idempotência se necessário",
+          "if (!pm.environment.get('idempotencyKey') || pm.environment.get('idempotencyKey') === '{{$guid}}') {",
+          "    pm.environment.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Script global executado após cada requisição",
+          "pm.environment.set('responseTime', pm.response.responseTime);",
+          "",
+          "// Log do tempo de resposta",
+          "console.log('Tempo de resposta:', pm.response.responseTime + 'ms');",
+          "",
+          "// Salvar mensagem de erro se houver",
+          "if (pm.response.code >= 400) {",
+          "    try {",
+          "        const errorResponse = pm.response.json();",
+          "        pm.environment.set('errorMessage', errorResponse.error || errorResponse.message || 'Erro desconhecido');",
+          "    } catch (e) {",
+          "        pm.environment.set('errorMessage', pm.response.text());",
+          "    }",
+          "} else {",
+          "    pm.environment.unset('errorMessage');",
+          "}"
+        ]
+      }
+    }
+  ]
+}

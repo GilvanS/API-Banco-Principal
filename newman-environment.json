@@ -1,0 +1,363 @@
+{
+  "id": "banco-digital-environment",
+  "name": "Banco Digital - Environment Variables",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "description": "URL base da API",
+      "enabled": true
+    },
+    {
+      "key": "apiVersion",
+      "value": "v1",
+      "description": "Versão da API",
+      "enabled": true
+    },
+    {
+      "key": "contentType",
+      "value": "application/json",
+      "description": "Content-Type padrão",
+      "enabled": true
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "description": "Token de autenticação JWT (será preenchido após login)",
+      "enabled": true
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "description": "Token de administrador (será preenchido após login admin)",
+      "enabled": true
+    },
+    {
+      "key": "idempotencyKey",
+      "value": "{{$guid}}",
+      "description": "Chave de idempotência única",
+      "enabled": true
+    },
+    {
+      "key": "testCpf",
+      "value": "11111111111",
+      "description": "CPF para testes",
+      "enabled": true
+    },
+    {
+      "key": "testPassword",
+      "value": "Teste123@",
+      "description": "Senha para testes",
+      "enabled": true
+    },
+    {
+      "key": "testEmail",
+      "value": "teste@neobank.com",
+      "description": "Email para testes",
+      "enabled": true
+    },
+    {
+      "key": "testPhone",
+      "value": "11999999999",
+      "description": "Telefone para testes",
+      "enabled": true
+    },
+    {
+      "key": "testName",
+      "value": "Usuario Teste",
+      "description": "Nome para testes",
+      "enabled": true
+    },
+    {
+      "key": "adminCpf",
+      "value": "00000000000",
+      "description": "CPF do administrador",
+      "enabled": true
+    },
+    {
+      "key": "adminPassword",
+      "value": "Admin123@",
+      "description": "Senha do administrador",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "description": "ID do usuário (será preenchido após criação/login)",
+      "enabled": true
+    },
+    {
+      "key": "accountId",
+      "value": "",
+      "description": "ID da conta (será preenchido após criação)",
+      "enabled": true
+    },
+    {
+      "key": "cardId",
+      "value": "",
+      "description": "ID do cartão (será preenchido após criação)",
+      "enabled": true
+    },
+    {
+      "key": "transferId",
+      "value": "",
+      "description": "ID da transferência (será preenchido após criação)",
+      "enabled": true
+    },
+    {
+      "key": "pixKeyId",
+      "value": "",
+      "description": "ID da chave PIX (será preenchido após criação)",
+      "enabled": true
+    },
+    {
+      "key": "investmentId",
+      "value": "",
+      "description": "ID do investimento (será preenchido após criação)",
+      "enabled": true
+    },
+    {
+      "key": "testCep",
+      "value": "01234567",
+      "description": "CEP para testes de endereço",
+      "enabled": true
+    },
+    {
+      "key": "testAddress",
+      "value": "Rua Teste, 123",
+      "description": "Endereço para testes",
+      "enabled": true
+    },
+    {
+      "key": "testCity",
+      "value": "São Paulo",
+      "description": "Cidade para testes",
+      "enabled": true
+    },
+    {
+      "key": "testState",
+      "value": "SP",
+      "description": "Estado para testes",
+      "enabled": true
+    },
+    {
+      "key": "testNeighborhood",
+      "value": "Centro",
+      "description": "Bairro para testes",
+      "enabled": true
+    },
+    {
+      "key": "transferAmount",
+      "value": "100.00",
+      "description": "Valor para transferências de teste",
+      "enabled": true
+    },
+    {
+      "key": "pixAmount",
+      "value": "50.00",
+      "description": "Valor para PIX de teste",
+      "enabled": true
+    },
+    {
+      "key": "investmentAmount",
+      "value": "1000.00",
+      "description": "Valor para investimentos de teste",
+      "enabled": true
+    },
+    {
+      "key": "testPixKey",
+      "value": "teste@pix.com",
+      "description": "Chave PIX para testes",
+      "enabled": true
+    },
+    {
+      "key": "testPixKeyType",
+      "value": "email",
+      "description": "Tipo da chave PIX para testes",
+      "enabled": true
+    },
+    {
+      "key": "cardBrand",
+      "value": "visa",
+      "description": "Bandeira do cartão para testes",
+      "enabled": true
+    },
+    {
+      "key": "cardReason",
+      "value": "perda",
+      "description": "Motivo para segunda via do cartão",
+      "enabled": true
+    },
+    {
+      "key": "newPassword",
+      "value": "NovaSenh@123",
+      "description": "Nova senha para testes de alteração",
+      "enabled": true
+    },
+    {
+      "key": "investmentType",
+      "value": "CDB",
+      "description": "Tipo de investimento para testes",
+      "enabled": true
+    },
+    {
+      "key": "investmentRisk",
+      "value": "baixo",
+      "description": "Nível de risco do investimento",
+      "enabled": true
+    },
+    {
+      "key": "transferDescription",
+      "value": "Transferência de teste via Newman",
+      "description": "Descrição para transferências de teste",
+      "enabled": true
+    },
+    {
+      "key": "pixDescription",
+      "value": "PIX de teste via Newman",
+      "description": "Descrição para PIX de teste",
+      "enabled": true
+    },
+    {
+      "key": "recipientCpf",
+      "value": "22222222222",
+      "description": "CPF do destinatário para transferências",
+      "enabled": true
+    },
+    {
+      "key": "recipientName",
+      "value": "Destinatario Teste",
+      "description": "Nome do destinatário para transferências",
+      "enabled": true
+    },
+    {
+      "key": "recipientBank",
+      "value": "001",
+      "description": "Código do banco destinatário",
+      "enabled": true
+    },
+    {
+      "key": "recipientAgency",
+      "value": "1234",
+      "description": "Agência do destinatário",
+      "enabled": true
+    },
+    {
+      "key": "recipientAccount",
+      "value": "567890",
+      "description": "Conta do destinatário",
+      "enabled": true
+    },
+    {
+      "key": "recipientAccountType",
+      "value": "corrente",
+      "description": "Tipo da conta do destinatário",
+      "enabled": true
+    },
+    {
+      "key": "testLimit",
+      "value": "5000.00",
+      "description": "Limite para testes",
+      "enabled": true
+    },
+    {
+      "key": "pageSize",
+      "value": "10",
+      "description": "Tamanho da página para paginação",
+      "enabled": true
+    },
+    {
+      "key": "pageNumber",
+      "value": "1",
+      "description": "Número da página para paginação",
+      "enabled": true
+    },
+    {
+      "key": "startDate",
+      "value": "2024-01-01",
+      "description": "Data inicial para filtros",
+      "enabled": true
+    },
+    {
+      "key": "endDate",
+      "value": "2024-12-31",
+      "description": "Data final para filtros",
+      "enabled": true
+    },
+    {
+      "key": "transactionType",
+      "value": "transferencia",
+      "description": "Tipo de transação para filtros",
+      "enabled": true
+    },
+    {
+      "key": "status",
+      "value": "pendente",
+      "description": "Status para filtros e atualizações",
+      "enabled": true
+    },
+    {
+      "key": "newStatus",
+      "value": "concluida",
+      "description": "Novo status para atualizações",
+      "enabled": true
+    },
+    {
+      "key": "testDocument",
+      "value": "RG123456789",
+      "description": "Documento para testes",
+      "enabled": true
+    },
+    {
+      "key": "testBirthDate",
+      "value": "1990-01-01",
+      "description": "Data de nascimento para testes",
+      "enabled": true
+    },
+    {
+      "key": "testIncome",
+      "value": "5000.00",
+      "description": "Renda para testes",
+      "enabled": true
+    },
+    {
+      "key": "testOccupation",
+      "value": "Desenvolvedor",
+      "description": "Profissão para testes",
+      "enabled": true
+    },
+    {
+      "key": "errorMessage",
+      "value": "",
+      "description": "Mensagem de erro (será preenchida durante testes)",
+      "enabled": true
+    },
+    {
+      "key": "responseTime",
+      "value": "",
+      "description": "Tempo de resposta (será preenchido durante testes)",
+      "enabled": true
+    },
+    {
+      "key": "testTimestamp",
+      "value": "{{$timestamp}}",
+      "description": "Timestamp atual para testes",
+      "enabled": true
+    },
+    {
+      "key": "randomString",
+      "value": "{{$randomAlphaNumeric}}",
+      "description": "String aleatória para testes",
+      "enabled": true
+    },
+    {
+      "key": "randomNumber",
+      "value": "{{$randomInt}}",
+      "description": "Número aleatório para testes",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2024-01-15T10:00:00.000Z",
+  "_postman_exported_using": "Postman/10.0.0"
+}
