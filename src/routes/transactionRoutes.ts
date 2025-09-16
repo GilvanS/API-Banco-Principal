@@ -119,8 +119,8 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/transactions/transfer - Realizar transferência
-router.post('/transfer', authMiddleware, async (req, res) => {
+// POST /api/transactions/transfer-bank - Transferência por agência e conta
+router.post('/transfer-bank', authMiddleware, async (req, res) => {
   try {
     const userId = (req as AuthRequest).usuario?.id;
     if (!userId) {
@@ -131,10 +131,8 @@ router.post('/transfer', authMiddleware, async (req, res) => {
       amount, 
       destinationAccount, 
       destinationAgency, 
-      destinationName, 
-      destinationCpf,
-      description,
-      transferType = 'TED'
+      destinationName,
+      description
     } = req.body;
 
     // Validações
@@ -142,182 +140,74 @@ router.post('/transfer', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Valor da transferência deve ser maior que zero' });
     }
 
-    const usuario = await UsuarioContaService.buscarPorId(userId);
-    if (!usuario) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
-
-    // Resolver destino via CPF (se informado)
-    let resolvedDestinationAccount = destinationAccount;
-    let resolvedDestinationAgency = destinationAgency;
-    let resolvedDestinationName = destinationName;
-    let resolvedDestinationCpf = destinationCpf as string | undefined;
-
-    if (destinationCpf) {
-      const destinatario = await UsuarioContaService.buscarPorCPF(destinationCpf);
-      if (!destinatario) {
-        return res.status(404).json({ error: 'Destinatário não encontrado pelo CPF informado' });
-      }
-      resolvedDestinationAccount = destinatario.numeroConta;
-      resolvedDestinationAgency = destinatario.agencia;
-      resolvedDestinationName = destinatario.nomeCompleto;
-      resolvedDestinationCpf = destinatario.cpf;
-    }
-
-    if (!resolvedDestinationAccount || !resolvedDestinationAgency) {
-      return res.status(400).json({ error: 'Informe CPF do destinatário OU conta e agência de destino' });
+    if (!destinationAccount || !destinationAgency) {
+      return res.status(400).json({ error: 'Agência e conta de destino são obrigatórios' });
     }
 
     if (amount > 100000) {
       return res.status(400).json({ error: 'Valor máximo para transferência é R$ 100.000,00' });
     }
 
-    // Calcular taxa
-    let taxa = 0;
-    if (transferType === 'TED') {
-      taxa = 5.90;
-    } else if (transferType === 'DOC') {
-      taxa = 3.50;
-    }
-
-    // Atalho para ambiente de teste: retornar resposta sintética sem acessar serviços que usam queryRunner
-    if (process.env.NODE_ENV === 'test') {
-      const now = new Date();
-      return res.status(201).json({
-        transactionId: `test-tx-${now.getTime()}`,
-        type: 'TRANSFER',
-        amount,
-        description: description || 'Transferência enviada',
-        date: now,
-        status: 'COMPLETED',
-        newBalance: usuario.saldo,
-        fee: taxa,
-        destination: {
-          account: resolvedDestinationAccount,
-          agency: resolvedDestinationAgency,
-          name: resolvedDestinationName
-        },
-        transferType
-      });
-    }
-
-    const valorTotal = amount + taxa;
-
-    // Verificar saldo disponível
-    const saldoDisponivel = usuario.saldo + (usuario.limiteCredito || 0);
-    if (valorTotal > saldoDisponivel) {
-      return res.status(400).json({ error: 'Saldo insuficiente para realizar a transferência' });
-    }
-
-    // Realizar transferência
-    const resultado = await TransacaoService.transferir({
-      agenciaOrigem: usuario.agencia,
-      contaOrigem: usuario.numeroConta,
-      nomeOrigem: usuario.nomeCompleto,
-      cpfOrigem: usuario.cpf,
-      agenciaDestino: resolvedDestinationAgency!,
-      contaDestino: resolvedDestinationAccount!,
-      nomeDestino: resolvedDestinationName || 'Destinatário',
-      cpfDestino: resolvedDestinationCpf || '12345678901', // fallback temporário
-      valor: amount
-    });
-
-    // Ajuste resposta para usar saldo atualizado corretamente e dados do domínio
-    const response = {
-      transactionId: resultado.dados.movimentacaoId,
-      type: 'TRANSFER',
-      amount: resultado.dados.valor,
-      description: `Transferência enviada para ${resultado.dados.nomeDestino} (${resultado.dados.agenciaDestino}/${resultado.dados.contaDestino})`,
-      date: resultado.dados.data,
-      status: 'COMPLETED',
-      newBalance: (await UsuarioContaService.buscarPorId(userId))?.saldo, // buscar saldo pós-transação
-      fee: taxa,
-      destination: {
-        account: resolvedDestinationAccount,
-        agency: resolvedDestinationAgency,
-        name: resolvedDestinationName
-      },
-      transferType
-    };
-
-    res.status(201).json(response);
-  } catch (error) {
-    console.error('Erro ao realizar transferência:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-// POST /api/v1/transactions/transfer-by-cpf - Transferência por CPF (resolve conta/agência automaticamente)
-router.post('/transfer-by-cpf', authMiddleware, async (req, res) => {
-  try {
-    const userId = (req as AuthRequest).usuario?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'Usuário não autenticado' });
-    }
-
-    const { amount, destinationCpf, description } = req.body;
-
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ error: 'Valor da transferência deve ser maior que zero' });
-    }
-    if (!destinationCpf) {
-      return res.status(400).json({ error: 'CPF do destinatário é obrigatório' });
-    }
-
     const usuario = await UsuarioContaService.buscarPorId(userId);
     if (!usuario) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
-    const destinatario = await UsuarioContaService.buscarPorCPF(destinationCpf);
+    // Verificar se a conta de destino existe
+    const destinatario = await UsuarioContaService.buscarPorAgenciaEConta(destinationAgency, destinationAccount);
     if (!destinatario) {
-      return res.status(404).json({ error: 'Destinatário não encontrado pelo CPF informado' });
+      return res.status(404).json({ error: 'Conta de destino não encontrada' });
     }
 
-    // Taxa padrão para TED
-    const taxa = 5.90;
-    const valorTotal = amount + taxa;
+    // Calcular taxa (TED padrão)
+     const taxa = 5.90;
+     const valorTotal = amount + taxa;
 
-    const saldoDisponivel = usuario.saldo + (usuario.limiteCredito || 0);
-    if (valorTotal > saldoDisponivel) {
-      return res.status(400).json({ error: 'Saldo insuficiente para realizar a transferência' });
-    }
+     // Verificar saldo disponível
+     const saldoDisponivel = usuario.saldo + (usuario.limiteCredito || 0);
+     if (valorTotal > saldoDisponivel) {
+       return res.status(400).json({ error: 'Saldo insuficiente para realizar a transferência' });
+     }
 
-    const resultado = await TransacaoService.transferir({
-      agenciaOrigem: usuario.agencia,
-      contaOrigem: usuario.numeroConta,
-      nomeOrigem: usuario.nomeCompleto,
-      cpfOrigem: usuario.cpf,
-      agenciaDestino: destinatario.agencia,
-      contaDestino: destinatario.numeroConta,
-      nomeDestino: destinatario.nomeCompleto,
-      cpfDestino: destinatario.cpf,
-      valor: amount
-    });
+     // Realizar transferência
+     const resultado = await TransacaoService.transferir({
+       agenciaOrigem: usuario.agencia,
+       contaOrigem: usuario.numeroConta,
+       nomeOrigem: usuario.nomeCompleto,
+       cpfOrigem: usuario.cpf,
+       agenciaDestino: destinationAgency,
+       contaDestino: destinationAccount,
+       nomeDestino: destinationName || destinatario.nomeCompleto,
+       cpfDestino: destinatario.cpf,
+       valor: amount
+     });
 
-    const response = {
-      transactionId: resultado.dados.movimentacaoId,
-      type: 'TRANSFER',
-      amount: resultado.dados.valor,
-      description: `Transferência enviada para ${destinatario.nomeCompleto} (${destinatario.agencia}/${destinatario.numeroConta})`,
-      date: resultado.dados.data,
-      status: 'COMPLETED',
-      newBalance: (await UsuarioContaService.buscarPorId(userId))?.saldo,
-      fee: taxa,
-      destination: {
-        account: destinatario.numeroConta,
-        agency: destinatario.agencia,
-        name: destinatario.nomeCompleto,
-        cpf: destinatario.cpf
-      }
-    };
+     const response = {
+       transactionId: resultado.dados.movimentacaoId,
+       type: 'BANK_TRANSFER',
+       amount: resultado.dados.valor,
+       description: description || `Transferência para ${destinationName || destinatario.nomeCompleto} (${destinationAgency}/${destinationAccount})`,
+       date: resultado.dados.data,
+       status: 'COMPLETED',
+       newBalance: (await UsuarioContaService.buscarPorId(userId))?.saldo,
+       fee: taxa,
+       destination: {
+         account: destinationAccount,
+         agency: destinationAgency,
+         name: destinationName || destinatario.nomeCompleto
+       }
+     };
 
-    res.status(201).json(response);
-  } catch (error) {
-    console.error('Erro ao realizar transferência por CPF:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
+     res.status(201).json(response);
+   } catch (error) {
+     console.error('Erro ao realizar transferência bancária:', error);
+     res.status(500).json({ error: 'Erro interno do servidor' });
+   }
+ });
+
+// Endpoint POST /api/v1/transactions/transfer-by-cpf foi descontinuado
+
+// Endpoint POST /api/v1/transactions/transfer-by-cpf foi descontinuado
 
 // POST /api/transactions/pix - Realizar PIX
 router.post('/pix', authMiddleware, async (req, res) => {

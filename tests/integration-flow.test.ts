@@ -117,7 +117,13 @@ describe('Integration Flow Tests - Complete User Journey', () => {
       // Mock para encontrar o usuário
       const hashedPassword = await bcrypt.hash('MinhaSenh@123', 10);
       const userForLogin = {
-        ...userAccount,
+        // valores padrão para execução isolada do Step 2
+        id: createdUserId,
+        nomeCompleto: 'Maria Silva Santos',
+        cpf: loginData.cpf,
+        agencia: '0001',
+        numeroConta: '987654',
+        ...(userAccount || {}),
         senha: hashedPassword
       };
       
@@ -238,7 +244,13 @@ describe('Integration Flow Tests - Complete User Journey', () => {
 
     it('Step 5: Should check account statement after transactions', async () => {
       mockUsuarioContaRepository.findOne.mockResolvedValue({
-        ...userAccount,
+        // valores padrão para execução isolada
+        id: createdUserId,
+        nomeCompleto: 'Maria Silva Santos',
+        cpf: '98765432100',
+        agencia: '0001',
+        numeroConta: '987654',
+        ...(userAccount || {}),
         saldo: 1150.00 // Saldo após transações
       });
 

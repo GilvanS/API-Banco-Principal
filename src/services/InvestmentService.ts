@@ -5,8 +5,8 @@ import { LoggerService } from "./LoggerService";
 import { UsuarioContaService } from "./UsuarioContaService";
 
 export class InvestmentService {
-    private static repository = AppDataSource.getRepository(Investment);
-    private static usuarioRepository = AppDataSource.getRepository(UsuarioConta);
+    private static get repository() { return AppDataSource.getRepository(Investment); }
+    private static get usuarioRepository() { return AppDataSource.getRepository(UsuarioConta); }
 
     static async obterResumoInvestimentos(usuarioId: string) {
         try {

@@ -19,6 +19,7 @@ import cardRoutes from "./routes/cardRoutes";
 import investmentRoutes from "./routes/investmentRoutes";
 import contaRoutes from "./routes/contaRoutes";
 import cartaoLimiteRoutes from "./routes/cartaoLimiteRoutes";
+import transacaoRoutes from "./routes/transacaoRoutes"; // ADICIONADO: Rotas PT-BR de transações
 
 const app = express();
 
@@ -28,6 +29,12 @@ app.use(express.json());
 // Swagger
 const swaggerDocument = YAML.load(path.resolve(__dirname, "../swagger.yaml"));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// Servir o arquivo swagger.yaml diretamente
+app.get("/swagger.yaml", (req, res) => {
+    res.setHeader('Content-Type', 'application/x-yaml');
+    res.sendFile(path.resolve(__dirname, "../swagger.yaml"));
+});
 
 // Rota de teste
 app.get("/", (req, res) => {
@@ -63,6 +70,7 @@ apiV1Router.use("/cards", cardRoutes);
 apiV1Router.use("/investments", investmentRoutes);
 // Compatibilidade PT-BR para testes legados
 apiV1Router.use("/investimentos", investmentRoutes);
+apiV1Router.use("/transacoes", transacaoRoutes); // ADICIONADO: montar rotas PT-BR
 
 // Rotas de consulta movidas para /api/v1
 apiV1Router.use("/contas", contaRoutes);

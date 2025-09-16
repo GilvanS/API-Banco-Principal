@@ -187,10 +187,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/CardsResponse'
 
-  # Endpoint removido: /api/v1/cards/request
-  # Motivo: Com cartão múltiplo (débito + crédito), não é mais necessário solicitar cartão de crédito separadamente
-  # Os cartões são criados automaticamente na abertura da conta
-
   /api/v1/cartoes/segunda-via:
     post:
       tags:
@@ -324,87 +320,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/transactions/deposit:
-    post:
-      tags:
-        - Transações
-      summary: Depósito em conta
-      description: Realiza um depósito na conta do usuário
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DepositRequest'
-      responses:
-        '201':
-          description: Depósito realizado com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TransactionResponse'
-
-  /api/v1/transactions/transfer:
-    post:
-      tags:
-        - Transações
-      summary: Transferência entre contas
-      description: Realiza transferência para outra conta
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TransferRequest'
-      responses:
-        '201':
-          description: Transferência realizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TransactionResponse'
-
-  /api/v1/transactions/transfer-by-cpf:
-    post:
-      tags:
-        - Transações
-      summary: Transferência por CPF
-      description: Realiza transferência resolvendo automaticamente agência e conta a partir do CPF informado
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - amount
-                - destinationCpf
-              properties:
-                amount:
-                  type: number
-                  format: float
-                  minimum: 0.01
-                  example: 200.00
-                destinationCpf:
-                  type: string
-                  pattern: '^[0-9]{11}$'
-                  example: '12345678901'
-                description:
-                  type: string
-                  example: 'Transferência por CPF'
-      responses:
-        '201':
-          description: Transferência realizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TransactionResponse'
+  # Endpoint POST /api/v1/transactions/transfer foi removido
+  # Endpoint POST /api/v1/transactions/transfer-by-cpf foi descontinuado
+  # Removidos em favor de transferências PIX mais seguras e transfer-bank
 
   /api/v1/transactions/pix:
     post:
@@ -481,39 +399,6 @@ paths:
       responses:
         '201':
           description: Compra realizada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TransactionResponse'
-
-  /api/v1/transactions/withdraw:
-    post:
-      tags:
-        - Transações
-      summary: Saque em conta
-      description: Realiza um saque da conta do usuário autenticado
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - amount
-              properties:
-                amount:
-                  type: number
-                  format: float
-                  minimum: 0.01
-                  example: 100.00
-                description:
-                  type: string
-                  example: 'Saque em conta'
-      responses:
-        '201':
-          description: Saque realizado com sucesso
           content:
             application/json:
               schema:
@@ -728,107 +613,209 @@ paths:
               schema:
                 $ref: '#/components/schemas/InvestmentRedeemResponse'
 
-/api/v1/clientes:
-  get:
-    tags:
-      - Clientes
-    summary: Listar clientes
-    description: Retorna a lista de clientes do sistema, sem incluir o campo de senha.
-    responses:
-      '200':
-        description: Lista de clientes
+  /api/v1/investments/buy-crypto:
+    post:
+      tags:
+        - Investimentos
+      summary: Comprar criptomoeda
+      description: Realiza a compra de criptomoedas com valor em reais
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
         content:
           application/json:
             schema:
-              type: array
-              items:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    example: "uuid-123"
-                  nomeCompleto:
-                    type: string
-                    example: "Maria Oliveira"
-                  cpf:
-                    type: string
-                    pattern: '^[0-9]{11}$'
-                    example: "98765432100"
-                  email:
-                    type: string
-                    format: email
-                    example: "maria.oliveira@example.com"
-                  agencia:
-                    type: string
-                    example: "0001"
-                  numeroConta:
-                    type: string
-                    example: "123456"
-                  saldo:
-                    type: number
-                    format: float
-                    example: 2500.50
-                  limiteCredito:
-                    type: number
-                    format: float
-                    example: 3000.00
-                  creditoUtilizado:
-                    type: number
-                    format: float
-                    example: 450.75
-                  ativo:
-                    type: boolean
-                    example: true
-                  contaBloqueada:
-                    type: boolean
-                    example: false
-                  limiteDebitoDiario:
-                    type: number
-                    format: float
-                    example: 5000.00
-                  tipoConta:
-                    type: string
-                    enum: [poupanca, corrente]
-                    example: corrente
-                  telefone:
-                    type: string
-                    nullable: true
-                    example: "11987654321"
-                  dataCriacao:
-                    type: string
-                    format: date-time
-                  dataAtualizacao:
-                    type: string
-                    format: date-time
-                  cartoes:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                        tipo:
-                          type: string
-                          enum: [debito, credito, multiplo]
-                        bandeira:
-                          type: string
-                          enum: [master, mastercard, visa, elo, amex]
-                        numero:
-                          type: string
-                          example: "5123 4567 8901 2345"
-                        status:
-                          type: string
-                          enum: [ativo, bloqueado, cancelado, inativo]
-                        limite:
-                          type: number
-                          format: float
-                          nullable: true
-                        faturaAtual:
-                          type: number
-                          format: float
-                        limiteDisponivel:
-                          type: number
-                          format: float
+              $ref: '#/components/schemas/BuyCryptoRequest'
+      responses:
+        '200':
+          description: Compra de criptomoeda realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CryptoTransactionResponse'
+        '400':
+          description: Dados inválidos ou saldo insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/investments/sell-crypto:
+    post:
+      tags:
+        - Investimentos
+      summary: Vender criptomoeda
+      description: Realiza a venda de criptomoedas convertendo para reais
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellCryptoRequest'
+      responses:
+        '200':
+          description: Venda de criptomoeda realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CryptoTransactionResponse'
+        '400':
+          description: Dados inválidos ou quantidade insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/investments/balance:
+    get:
+      tags:
+        - Investimentos
+      summary: Consultar saldo de investimentos
+      description: Retorna o saldo atual de todos os investimentos em criptomoedas
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Saldo de investimentos em criptomoedas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CryptoBalanceResponse'
+
+  /api/v1/investments/yield:
+    get:
+      tags:
+        - Investimentos
+      summary: Consultar rendimentos
+      description: Retorna os rendimentos dos investimentos em criptomoedas
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Rendimentos dos investimentos em criptomoedas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CryptoYieldResponse'
+
+  /api/v1/clientes:
+    get:
+      tags:
+        - Clientes
+      summary: Listar clientes
+      description: Retorna a lista de clientes do sistema, sem incluir o campo de senha.
+      responses:
+        '200':
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: "uuid-123"
+                    nomeCompleto:
+                      type: string
+                      example: "Maria Oliveira"
+                    cpf:
+                      type: string
+                      pattern: '^[0-9]{11}$'
+                      example: "98765432100"
+                    email:
+                      type: string
+                      format: email
+                      example: "maria.oliveira@example.com"
+                    agencia:
+                      type: string
+                      example: "0001"
+                    numeroConta:
+                      type: string
+                      example: "123456"
+                    saldo:
+                      type: number
+                      format: float
+                      example: 2500.50
+                    limiteCredito:
+                      type: number
+                      format: float
+                      example: 3000.00
+                    creditoUtilizado:
+                      type: number
+                      format: float
+                      example: 450.75
+                    ativo:
+                      type: boolean
+                      example: true
+                    contaBloqueada:
+                      type: boolean
+                      example: false
+                    limiteDebitoDiario:
+                      type: number
+                      format: float
+                      example: 5000.00
+                    tipoConta:
+                      type: string
+                      enum: [poupanca, corrente]
+                      example: corrente
+                    telefone:
+                      type: string
+                      nullable: true
+                      example: "11987654321"
+                    dataCriacao:
+                      type: string
+                      format: date-time
+                    dataAtualizacao:
+                      type: string
+                      format: date-time
+                    cartoes:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          tipo:
+                            type: string
+                            enum: [debito, credito, multiplo]
+                          bandeira:
+                            type: string
+                            enum: [master, mastercard, visa, elo, amex]
+                          numero:
+                            type: string
+                            example: "5123 4567 8901 2345"
+                          status:
+                            type: string
+                            enum: [ativo, bloqueado, cancelado, inativo]
+                          limite:
+                            type: number
+                            format: float
+                            nullable: true
+                          faturaAtual:
+                            type: number
+                            format: float
+                          limiteDisponivel:
+                            type: number
+                            format: float
 
   /api/v1/payments/boleto:
     post:
@@ -925,109 +912,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/PixKey'
 
-  /api/v1/transactions/transfer-pix:
-    post:
-      tags:
-        - Transações
-      summary: Transferência via chave PIX
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PixTransferRequest'
-      responses:
-        '201':
-          description: PIX realizado com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TransactionResponse'
-
-  /api/v1/cards/block:
-    post:
-      tags:
-        - Cartões
-      summary: Bloquear cartão do usuário
-      description: Bloqueia o cartão ativo do usuário logado
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-                  example: 'Solicitado pelo usuário'
-      responses:
-        '200':
-          description: Cartão bloqueado com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CardBlockResponse'
-
-  /api/v1/cards/reissue:
-    post:
-      tags:
-        - Cartões
-      summary: Solicitar 2ª via do cartão
-      description: Solicita a reemissão do cartão do usuário
-      security:
-        - BearerAuth: []
-      responses:
-        '201':
-          description: Solicitação registrada
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: 'Solicitação de 2ª via registrada.'
-
-  /api/v1/investments:
-    get:
-      tags:
-        - Investimentos
-      summary: Listar investimentos do usuário
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Lista de investimentos do usuário
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvestmentsList'
-
-  /api/v1/investments/redeem:
-    post:
-      tags:
-        - Investimentos
-      summary: Resgatar investimento por corpo da requisição
-      description: Resgata parcial ou totalmente um investimento informando o ID e valor desejado
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/InvestmentRedeemRequest'
-      responses:
-        '200':
-          description: Resgate realizado com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvestmentRedeemResponse'
+  # Endpoint /api/v1/cards/reissue removido - duplicata do /api/v1/cartoes/segunda-via
+  # Use /api/v1/cartoes/segunda-via que possui implementação completa com validações
 
 components:
   securitySchemes:
@@ -1478,44 +1364,7 @@ components:
           type: string
           example: "Depósito via transferência"
 
-    TransferRequest:
-      type: object
-      required:
-        - amount
-      properties:
-        amount:
-          type: number
-          format: float
-          minimum: 0.01
-          example: 200.00
-        description:
-          type: string
-          example: "Transferência entre contas"
-        transferType:
-          type: string
-          enum: [TED, DOC]
-          example: "TED"
-        destination:
-          oneOf:
-            - type: object
-              required: [destinationAccount, destinationAgency]
-              properties:
-                destinationAccount:
-                  type: string
-                  example: "654321"
-                destinationAgency:
-                  type: string
-                  example: "0002"
-                destinationName:
-                  type: string
-                  example: "Maria Santos"
-            - type: object
-              required: [destinationCpf]
-              properties:
-                destinationCpf:
-                  type: string
-                  pattern: '^[0-9]{11}$'
-                  example: "12345678901"
+    # TransferRequest removido - usar BankTransferRequest para transfer-bank
 
     CreditPurchaseRequest:
       type: object
@@ -1940,6 +1789,157 @@ components:
               type: string
             conta:
               type: string
+
+    BuyCryptoRequest:
+      type: object
+      required:
+        - tipoCriptomoeda
+        - valorReais
+      properties:
+        tipoCriptomoeda:
+          type: string
+          enum: [BITCOIN, ETHEREUM, LITECOIN, RIPPLE, CARDANO]
+          example: "BITCOIN"
+        valorReais:
+          type: number
+          format: decimal
+          minimum: 10
+          example: 100.00
+
+    SellCryptoRequest:
+      type: object
+      required:
+        - tipoCriptomoeda
+        - quantidade
+      properties:
+        tipoCriptomoeda:
+          type: string
+          enum: [BITCOIN, ETHEREUM, LITECOIN, RIPPLE, CARDANO]
+          example: "BITCOIN"
+        quantidade:
+          type: number
+          format: decimal
+          minimum: 0.00000001
+          example: 0.001
+
+    CryptoTransactionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Transação realizada com sucesso"
+        data:
+          type: object
+          properties:
+            transactionId:
+              type: string
+              example: "crypto_tx_123456789"
+            tipoCriptomoeda:
+              type: string
+              example: "BITCOIN"
+            quantidade:
+              type: number
+              format: decimal
+              example: 0.001
+            valorReais:
+              type: number
+              format: decimal
+              example: 100.00
+            precoUnitario:
+              type: number
+              format: decimal
+              example: 100000.00
+            status:
+              type: string
+              enum: [ATIVO, VENDIDO, CANCELADO]
+              example: "ATIVO"
+            dataTransacao:
+              type: string
+              format: date-time
+              example: "2024-01-15T10:30:00Z"
+
+    CryptoBalanceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            totalInvestido:
+              type: number
+              format: decimal
+              example: 1500.00
+            valorAtual:
+              type: number
+              format: decimal
+              example: 1650.00
+            rentabilidade:
+              type: number
+              format: decimal
+              example: 10.00
+            investimentos:
+              type: array
+              items:
+                type: object
+                properties:
+                  tipoCriptomoeda:
+                    type: string
+                    example: "BITCOIN"
+                  quantidade:
+                    type: number
+                    format: decimal
+                    example: 0.015
+                  valorInvestido:
+                    type: number
+                    format: decimal
+                    example: 1000.00
+                  valorAtual:
+                    type: number
+                    format: decimal
+                    example: 1100.00
+                  rentabilidade:
+                    type: number
+                    format: decimal
+                    example: 10.00
+
+    CryptoYieldResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            rendimentoTotal:
+              type: number
+              format: decimal
+              example: 150.00
+            percentualRendimento:
+              type: number
+              format: decimal
+              example: 10.00
+            rendimentoPorCripto:
+              type: array
+              items:
+                type: object
+                properties:
+                  tipoCriptomoeda:
+                    type: string
+                    example: "BITCOIN"
+                  rendimento:
+                    type: number
+                    format: decimal
+                    example: 100.00
+                  percentual:
+                    type: number
+                    format: decimal
+                    example: 10.00
 
     ErrorResponse:
       type: object

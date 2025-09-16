@@ -6,8 +6,8 @@ import { LoggerService } from './LoggerService';
 import * as bcrypt from 'bcrypt';
 
 export class CartaoService {
-    private static repository = AppDataSource.getRepository(Cartao);
-    private static usuarioRepository = AppDataSource.getRepository(UsuarioConta);
+    private static repo() { return AppDataSource.getRepository(Cartao); }
+    private static usuarioRepo() { return AppDataSource.getRepository(UsuarioConta); }
 
     static async solicitarSegundaVia(dados: {
         usuarioId: string;
@@ -15,7 +15,7 @@ export class CartaoService {
         bandeira?: BandeiraCartao;
     }) {
         try {
-            const usuario = await this.usuarioRepository.findOne({
+            const usuario = await this.usuarioRepo().findOne({
                 where: { id: dados.usuarioId }
             });
 
@@ -24,7 +24,7 @@ export class CartaoService {
             }
 
             // Buscar cartão ativo atual do usuário
-            const cartaoAtual = await this.repository.findOne({
+            const cartaoAtual = await this.repo().findOne({
                 where: { 
                     usuarioConta: { id: dados.usuarioId },
                     status: StatusCartao.ATIVO,
@@ -41,10 +41,10 @@ export class CartaoService {
             cartaoAtual.status = StatusCartao.CANCELADO;
             cartaoAtual.ativo = false;
             cartaoAtual.dataSubstituicao = new Date();
-            await this.repository.save(cartaoAtual);
+            await this.repo().save(cartaoAtual);
 
             // Criar nova segunda via
-            const novoCartao = this.repository.create({
+            const novoCartao = this.repo().create({
                 usuarioConta: usuario,
                 tipo: TipoCartao.MULTIPLO, // Sempre cartão múltiplo
                 bandeira: dados.bandeira || cartaoAtual.bandeira, // Manter bandeira ou usar nova
@@ -62,7 +62,7 @@ export class CartaoService {
                 ativo: true
             });
 
-            await this.repository.save(novoCartao);
+            await this.repo().save(novoCartao);
 
             LoggerService.info("Segunda via de cartão solicitada com sucesso", {
                 usuarioId: dados.usuarioId,
@@ -80,7 +80,8 @@ export class CartaoService {
 
     static async buscarCartoesUsuario(usuarioId: string) {
         try {
-            const cartoes = await this.repository.find({
+            const repo = this.repo();
+            const cartoes = await repo.find({
                 where: { usuarioConta: { id: usuarioId } },
                 order: { dataCriacao: "DESC" }
             });
@@ -94,7 +95,7 @@ export class CartaoService {
 
     static async definirPIN(cartaoId: string, pinAtual: string, novoPIN: string) {
         try {
-            const cartao = await this.repository.findOne({
+            const cartao = await this.repo().findOne({
                 where: { id: cartaoId },
                 select: ["id", "tipo", "pin"]
             });
@@ -118,7 +119,7 @@ export class CartaoService {
 
             const novoPINHash = await bcrypt.hash(novoPIN, 10);
             cartao.pin = novoPINHash;
-            await this.repository.save(cartao);
+            await this.repo().save(cartao);
 
             LoggerService.info("PIN alterado com sucesso", { cartaoId });
 
@@ -131,7 +132,7 @@ export class CartaoService {
 
     static async validarPIN(cartaoId: string, pin: string): Promise<boolean> {
         try {
-            const cartao = await this.repository.findOne({
+            const cartao = await this.repo().findOne({
                 where: { id: cartaoId },
                 select: ["id", "tipo", "pin", "status"]
             });
@@ -162,7 +163,7 @@ export class CartaoService {
 
     static async bloquearCartao(cartaoId: string) {
         try {
-            const cartao = await this.repository.findOne({
+            const cartao = await this.repo().findOne({
                 where: { id: cartaoId }
             });
 
@@ -171,7 +172,7 @@ export class CartaoService {
             }
 
             cartao.status = StatusCartao.BLOQUEADO;
-            await this.repository.save(cartao);
+            await this.repo().save(cartao);
 
             LoggerService.info("Cartão bloqueado", { cartaoId });
 
@@ -184,7 +185,7 @@ export class CartaoService {
 
     static async desbloquearCartao(cartaoId: string) {
         try {
-            const cartao = await this.repository.findOne({
+            const cartao = await this.repo().findOne({
                 where: { id: cartaoId }
             });
 
@@ -193,7 +194,7 @@ export class CartaoService {
             }
 
             cartao.status = StatusCartao.ATIVO;
-            await this.repository.save(cartao);
+            await this.repo().save(cartao);
 
             LoggerService.info("Cartão desbloqueado", { cartaoId });
 
@@ -235,7 +236,7 @@ export class CartaoService {
     // Novos métodos para a refatoração
     static async listarCartoes(usuarioId: string) {
         try {
-            const cartoes = await this.repository.find({
+            const cartoes = await this.repo().find({
                 where: { usuarioConta: { id: usuarioId } },
                 relations: ["usuarioConta"],
                 order: { dataCriacao: "DESC" }
@@ -271,7 +272,7 @@ export class CartaoService {
         isVirtual?: boolean;
     }) {
         try {
-            const usuario = await this.usuarioRepository.findOne({
+            const usuario = await this.usuarioRepo().findOne({
                 where: { id: usuarioId }
             });
 
@@ -279,7 +280,7 @@ export class CartaoService {
                 throw new Error("Usuário não encontrado");
             }
 
-            const cartao = this.repository.create({
+            const cartao = this.repo().create({
                 usuarioConta: usuario,
                 tipo: dados.tipo,
                 bandeira: dados.bandeira,
@@ -309,7 +310,7 @@ export class CartaoService {
                 cartao.dataVencimentoFatura = dataVencimento;
             }
 
-            await this.repository.save(cartao);
+            await this.repo().save(cartao);
 
             LoggerService.info("Novo cartão solicitado", {
                 usuarioId,
@@ -327,7 +328,7 @@ export class CartaoService {
 
     static async consultarFatura(usuarioId: string, cartaoId: string) {
         try {
-            const cartao = await this.repository.findOne({
+            const cartao = await this.repo().findOne({
                 where: { 
                     id: cartaoId,
                     usuarioConta: { id: usuarioId },
@@ -362,7 +363,7 @@ export class CartaoService {
         limite?: number;
     }) {
         try {
-            const cartao = await this.repository.findOne({
+            const cartao = await this.repo().findOne({
                 where: { 
                     id: cartaoId,
                     usuarioConta: { id: usuarioId }
@@ -388,7 +389,7 @@ export class CartaoService {
                 cartao.limiteDisponivel = configuracoes.limite - (cartao.faturaAtual || 0);
             }
 
-            await this.repository.save(cartao);
+            await this.repo().save(cartao);
 
             LoggerService.info("Configurações do cartão atualizadas", {
                 usuarioId,
@@ -405,7 +406,7 @@ export class CartaoService {
 
     static async bloquearCartaoComMotivo(usuarioId: string, cartaoId: string, motivo: string) {
         try {
-            const cartao = await this.repository.findOne({
+            const cartao = await this.repo().findOne({
                 where: { 
                     id: cartaoId,
                     usuarioConta: { id: usuarioId }
@@ -421,7 +422,7 @@ export class CartaoService {
             cartao.ativo = false;
             cartao.motivoBloqueio = motivo;
 
-            await this.repository.save(cartao);
+            await this.repo().save(cartao);
 
             LoggerService.info("Cartão bloqueado", {
                 usuarioId,
@@ -438,7 +439,7 @@ export class CartaoService {
 
     static async desbloquearCartaoComValidacao(usuarioId: string, cartaoId: string) {
         try {
-            const cartao = await this.repository.findOne({
+            const cartao = await this.repo().findOne({
                 where: { 
                     id: cartaoId,
                     usuarioConta: { id: usuarioId }
@@ -458,7 +459,7 @@ export class CartaoService {
             cartao.ativo = true;
             cartao.motivoBloqueio = undefined;
 
-            await this.repository.save(cartao);
+            await this.repo().save(cartao);
 
             LoggerService.info("Cartão desbloqueado", {
                 usuarioId,

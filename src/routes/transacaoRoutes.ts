@@ -4,6 +4,7 @@ import { TransacaoService } from "../services/TransacaoService";
 import { validateRequest } from "../middleware/validateRequest";
 import { LoggerService } from "../services/LoggerService";
 import { idempotencyMiddleware, IdempotentRequest } from "../middleware/idempotencyMiddleware";
+import { authMiddleware, AuthRequest } from "../middleware/authMiddleware";
 
 const router = Router();
 
@@ -175,6 +176,29 @@ router.post("/depositar",
     }
 );
 
+// ALIAS: POST /transacoes/deposito - compatibilidade com testes legados
+router.post("/deposito",
+    idempotencyMiddleware,
+    [
+        body("agencia").notEmpty().withMessage("Agência é obrigatória"),
+        body("conta").notEmpty().withMessage("Conta é obrigatória"),
+        body("valor").isFloat({ min: 0.01 }).withMessage("Valor deve ser maior que zero"),
+        validateRequest
+    ],
+    async (req: IdempotentRequest & Request<{}, {}, DepositoRequest>, res: Response) => {
+        try {
+            const resultado = await TransacaoService.depositar({
+                ...req.body,
+                idempotencyKey: req.idempotencyKey
+            });
+            return res.json(resultado);
+        } catch (error) {
+            LoggerService.error("Erro ao realizar depósito (alias)", error);
+            return res.status(400).json({ erro: (error as Error).message });
+        }
+    }
+);
+
 // POST /transacoes/pagar-fatura - Pagar fatura do cartão de crédito
 router.post("/pagar-fatura",
     idempotencyMiddleware,
@@ -212,6 +236,42 @@ router.get("/extrato/:usuarioId", async (req: Request, res: Response) => {
         return res.json(extrato);
     } catch (error) {
         LoggerService.error("Erro ao consultar extrato", error);
+        return res.status(400).json({ erro: (error as Error).message });
+    }
+});
+
+// ALIAS: GET /transacoes/extrato - usa usuário autenticado e mapeia resposta para compatibilidade com testes
+router.get("/extrato", authMiddleware, async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.usuario?.id;
+        if (!userId) {
+            return res.status(401).json({ error: 'Usuário não autenticado' });
+        }
+
+        const { page = '1', limit = '10', dataInicio, dataFim, tipoTransacao } = req.query as any;
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+
+        const extrato = await TransacaoService.consultarExtrato(
+            userId,
+            pageNum,
+            limitNum,
+            (dataInicio as string) || undefined,
+            (dataFim as string) || undefined,
+            (tipoTransacao as string) || undefined
+        );
+
+        // Mapear para o contrato esperado nos testes: { movimentacoes, total, page, limit }
+        const response = {
+            movimentacoes: extrato.movimentacoes,
+            total: extrato.paginacao?.total ?? extrato.movimentacoes.length,
+            page: pageNum,
+            limit: limitNum
+        };
+
+        return res.status(200).json(response);
+    } catch (error) {
+        LoggerService.error("Erro ao consultar extrato (alias)", error);
         return res.status(400).json({ erro: (error as Error).message });
     }
 });

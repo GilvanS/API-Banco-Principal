@@ -5,8 +5,8 @@ import { LoggerService } from "./LoggerService";
 import { UsuarioContaService } from "./UsuarioContaService";
 
 export class MovimentacaoService {
-    private static repository = AppDataSource.getRepository(Movimentacao);
-    private static usuarioRepository = AppDataSource.getRepository(UsuarioConta);
+    private static get repository() { return AppDataSource.getRepository(Movimentacao); }
+    private static get usuarioRepository() { return AppDataSource.getRepository(UsuarioConta); }
 
     static async criarMovimentacao(dados: {
         usuarioId: string;

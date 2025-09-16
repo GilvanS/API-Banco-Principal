@@ -3,10 +3,13 @@ import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import { UsuarioContaService } from '../services/UsuarioContaService';
 import { AppDataSource } from '../database/data-source';
 import { Investment, TipoInvestimento, StatusInvestimento } from '../entities/Investment';
+import { CryptoInvestment, TipoCriptomoeda } from '../entities/CryptoInvestment';
+import { CryptoInvestmentService } from '../services/CryptoInvestmentService';
 
 import { TipoMovimentacao } from '../entities/Movimentacao';
 import { idempotencyMiddleware, IdempotentRequest } from '../middleware/idempotencyMiddleware';
 import { MovimentacaoService } from '../services/MovimentacaoService';
+import { InvestmentService } from '../services/InvestmentService';
 
 const router = Router();
 const investmentRepository = AppDataSource.getRepository(Investment);
@@ -45,14 +48,23 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // GET /api/investments/summary - Resumo dos investimentos
+// GET /api/v1/investments/summary - retorna resumo dos investimentos do usuário
+router.get('/summary', authMiddleware, async (req, res, next) => {
+  // Delegar para o próximo handler definido abaixo, que retorna o payload esperado pelos testes
+  return next('route');
+});
+
+// GET /api/investments/summary - Resumo dos investimentos
 router.get('/summary', authMiddleware, async (req, res) => {
   try {
     const userId = (req as AuthRequest).usuario?.id;
+    console.log('[investments] GET /summary - userId:', userId);
     if (!userId) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
 
     const usuario = await UsuarioContaService.buscarPorId(userId);
+    console.log('[investments] Usuario encontrado?', !!usuario);
     if (!usuario) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
@@ -62,6 +74,7 @@ router.get('/summary', authMiddleware, async (req, res) => {
       where: { usuarioConta: { id: userId } },
       order: { dataCriacao: 'DESC' }
     });
+    console.log('[investments] Qtde investments:', Array.isArray(investments) ? investments.length : 'n/a');
 
     // Cálculos aceitando tanto forma da entidade quanto mocks dos testes
     const totalInvestido = investments.reduce((sum: number, inv: any) => sum + Number(inv.valorInvestido ?? inv.valor ?? 0), 0);
@@ -94,7 +107,6 @@ router.get('/summary', authMiddleware, async (req, res) => {
     });
 
     const response = {
-      // Chaves em inglês (mantidas para compatibilidade da nova API)
       totalInvested: totalInvestido,
       currentValue: totalAtual,
       totalReturn: totalAtual - totalInvestido,
@@ -111,7 +123,6 @@ router.get('/summary', authMiddleware, async (req, res) => {
         status: inv.status,
         createdAt: inv.dataCriacao
       })),
-      // Chaves esperadas nos testes de massa de dados
       totalInvestido,
       totalAtual,
       rentabilidadeTotal,
@@ -206,6 +217,104 @@ router.get('/applications', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erro ao listar aplicações:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/investments/in-progress - Listar investimentos em andamento (status ATIVO)
+router.get('/in-progress', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const { type, page = '1', limit = '20' } = req.query as any;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+
+    const whereConditions: any = { usuarioConta: { id: userId }, status: StatusInvestimento.ATIVO };
+    if (type) whereConditions.tipo = type;
+
+    const investmentRepository = AppDataSource.getRepository(Investment);
+    const [investments, total] = await investmentRepository.findAndCount({
+      where: whereConditions,
+      order: { dataCriacao: 'DESC' },
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum
+    });
+
+    const mapped = investments.map(inv => ({
+      id: (inv as any).id,
+      name: (inv as any).nome,
+      type: (inv as any).tipo,
+      investedAmount: Number((inv as any).valorInvestido ?? (inv as any).valor ?? 0),
+      currentValue: Number((inv as any).valorAtual ?? 0),
+      returnPercentage: Number((inv as any).rentabilidade ?? (inv as any).rendimento ?? 0),
+      status: (inv as any).status,
+      createdAt: (inv as any).dataCriacao
+    }));
+
+    return res.status(200).json({
+      investments: mapped,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao listar investimentos em andamento:', error);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Alias em português: GET /api/investimentos/em-andamento - Listar investimentos em andamento (status ATIVO)
+router.get('/em-andamento', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const { type, page = '1', limit = '20' } = req.query as any;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+
+    const whereConditions: any = { usuarioConta: { id: userId }, status: StatusInvestimento.ATIVO };
+    if (type) whereConditions.tipo = type;
+
+    const investmentRepository = AppDataSource.getRepository(Investment);
+    const [investments, total] = await investmentRepository.findAndCount({
+      where: whereConditions,
+      order: { dataCriacao: 'DESC' },
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum
+    });
+
+    const mapped = investments.map(inv => ({
+      id: (inv as any).id,
+      name: (inv as any).nome,
+      type: (inv as any).tipo,
+      investedAmount: Number((inv as any).valorInvestido ?? (inv as any).valor ?? 0),
+      currentValue: Number((inv as any).valorAtual ?? 0),
+      returnPercentage: Number((inv as any).rentabilidade ?? (inv as any).rendimento ?? 0),
+      status: (inv as any).status,
+      createdAt: (inv as any).dataCriacao
+    }));
+
+    return res.status(200).json({
+      investimentos: mapped,
+      paginacao: {
+        pagina: pageNum,
+        limite: limitNum,
+        total,
+        totalPaginas: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao listar investimentos em andamento (PT-BR):', error);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -672,6 +781,124 @@ router.get('/:investmentId/yield', authMiddleware, async (req, res) => {
     res.json(response);
   } catch (error) {
     console.error('Erro ao consultar rendimento:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// POST /api/v1/investments/buy-crypto - Comprar criptomoeda
+router.post('/buy-crypto', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const { tipoCriptomoeda, valorInvestimento } = req.body;
+
+    if (!tipoCriptomoeda || !valorInvestimento) {
+      return res.status(400).json({ error: 'Tipo de criptomoeda e valor de investimento são obrigatórios' });
+    }
+
+    if (!Object.values(TipoCriptomoeda).includes(tipoCriptomoeda)) {
+      return res.status(400).json({ error: 'Tipo de criptomoeda inválido' });
+    }
+
+    if (valorInvestimento <= 0) {
+      return res.status(400).json({ error: 'Valor de investimento deve ser maior que zero' });
+    }
+
+    const investment = await CryptoInvestmentService.comprarCriptomoeda(
+      userId,
+      tipoCriptomoeda,
+      valorInvestimento
+    );
+
+    const response = {
+      id: investment.id,
+      tipoCriptomoeda: investment.tipoCriptomoeda,
+      quantidade: investment.quantidade,
+      valorInvestido: investment.valorCompra,
+      precoUnitario: investment.precoUnitarioCompra,
+      status: investment.status,
+      dataCriacao: investment.dataCriacao
+    };
+
+    res.status(201).json(response);
+  } catch (error: any) {
+    console.error('Erro ao comprar criptomoeda:', error);
+    res.status(400).json({ error: error.message || 'Erro interno do servidor' });
+  }
+});
+
+// POST /api/v1/investments/sell-crypto - Vender criptomoeda
+router.post('/sell-crypto', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const { investmentId, quantidade } = req.body;
+
+    if (!investmentId) {
+      return res.status(400).json({ error: 'ID do investimento é obrigatório' });
+    }
+
+    const investment = await CryptoInvestmentService.venderCriptomoeda(
+      userId,
+      investmentId,
+      quantidade
+    );
+
+    const precos = CryptoInvestmentService.obterPrecosCriptomoedas();
+    const precoAtual = precos[investment.tipoCriptomoeda];
+    const valorVenda = quantidade ? quantidade * precoAtual : investment.valorVenda;
+
+    const response = {
+      id: investment.id,
+      tipoCriptomoeda: investment.tipoCriptomoeda,
+      quantidadeVendida: quantidade || investment.quantidade,
+      valorVenda,
+      precoUnitarioVenda: precoAtual,
+      status: investment.status,
+      dataVenda: investment.dataVenda || new Date()
+    };
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('Erro ao vender criptomoeda:', error);
+    res.status(400).json({ error: error.message || 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/v1/investments/balance - Consultar saldo de investimentos
+router.get('/balance', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const saldo = await CryptoInvestmentService.obterSaldoInvestimentos(userId);
+    res.json(saldo);
+  } catch (error) {
+    console.error('Erro ao consultar saldo de investimentos:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/v1/investments/yield - Consultar rendimentos
+router.get('/yield', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const rendimentos = await CryptoInvestmentService.obterRendimentos(userId);
+    res.json(rendimentos);
+  } catch (error) {
+    console.error('Erro ao consultar rendimentos:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

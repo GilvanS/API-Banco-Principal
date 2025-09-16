@@ -7,6 +7,36 @@ import { TipoCartao } from '../entities/Cartao';
 
 const router = Router();
 
+// GET /api/v1/account/profile - Obter dados completos do perfil do usuário autenticado
+router.get('/profile', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as AuthRequest).usuario?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const usuario = await UsuarioContaService.buscarPorId(userId);
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    const response = {
+      nomeCompleto: usuario.nomeCompleto,
+      email: usuario.email,
+      cpf: usuario.cpf,
+      dataNascimento: usuario.dataNascimento,
+      telefone: usuario.telefone,
+      endereco: usuario.endereco
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Erro ao consultar perfil do usuário:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // GET /api/v1/account/me - Obter dados da conta do usuário autenticado
 router.get('/me', authMiddleware, async (req, res) => {
   try {
@@ -212,6 +242,18 @@ router.get('/bill-inquiry', authMiddleware, async (req, res) => {
   } catch (error: any) {
     console.error('Erro ao consultar fatura:', error);
     res.status(500).json({ error: error.message || 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/v1/account/pix/types - Listar tipos de PIX suportados
+router.get('/pix/types', authMiddleware, async (req, res) => {
+  try {
+    // Tipos suportados pela API (mantidos em sincronia com validações e serviços)
+    const types = ['cpf', 'email'];
+    return res.status(200).json({ types });
+  } catch (error) {
+    console.error('Erro ao listar tipos PIX:', error);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 

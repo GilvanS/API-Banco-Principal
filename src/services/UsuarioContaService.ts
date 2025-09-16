@@ -6,8 +6,9 @@ import { LoggerService } from "./LoggerService";
 import bcrypt from "bcrypt";
 
 export class UsuarioContaService {
-    private static repository = AppDataSource.getRepository(UsuarioConta);
-    private static cartaoRepository = AppDataSource.getRepository(Cartao);
+    // Obtém repositórios dinamicamente para compatibilidade com testes (jest.mock)
+    private static repo() { return AppDataSource.getRepository(UsuarioConta); }
+    private static cartaoRepo() { return AppDataSource.getRepository(Cartao); }
 
     static async criarCliente(dados: {
         nomeCompleto: string;
@@ -23,7 +24,7 @@ export class UsuarioContaService {
     }) {
         try {
             // 1. Verificar se CPF já existe
-            const clienteExistente = await this.repository.findOne({
+            const clienteExistente = await this.repo().findOne({
                 where: { cpf: dados.cpf }
             });
 
@@ -39,7 +40,7 @@ export class UsuarioContaService {
             const senhaHash = await bcrypt.hash(dados.senha, 10);
 
             // 4. Criar cliente
-            const cliente = this.repository.create({
+            const cliente = this.repo().create({
                 nomeCompleto: dados.nomeCompleto,
                 cpf: dados.cpf,
                 senha: senhaHash,
@@ -52,7 +53,7 @@ export class UsuarioContaService {
                 saldo: 200.00 // Saldo inicial
             });
 
-            await this.repository.save(cliente);
+            await this.repo().save(cliente);
 
             // 5. Criar cartões iniciais (débito + crédito com bandeira selecionada)
             await this.criarCartoesIniciais(cliente, dados.bandeira);
@@ -71,7 +72,7 @@ export class UsuarioContaService {
 
     static async buscarPorId(id: string) {
         try {
-            const cliente = await this.repository.findOne({
+            const cliente = await this.repo().findOne({
                 where: { id },
                 relations: ["cartoes"]
             });
@@ -90,7 +91,7 @@ export class UsuarioContaService {
 
     static async buscarPorCPF(cpf: string) {
         try {
-            const cliente = await this.repository.findOne({
+            const cliente = await this.repo().findOne({
                 where: { cpf },
                 relations: ["cartoes"]
             });
@@ -104,7 +105,7 @@ export class UsuarioContaService {
 
     static async buscarTodos() {
         try {
-            const clientes = await this.repository.find({
+            const clientes = await this.repo().find({
                 relations: ["cartoes"],
                 order: { nomeCompleto: "ASC" }
             });
@@ -118,7 +119,7 @@ export class UsuarioContaService {
 
     static async atualizarSaldo(id: string, valor: number) {
         try {
-            const cliente = await this.repository.findOne({
+            const cliente = await this.repo().findOne({
                 where: { id }
             });
 
@@ -127,7 +128,7 @@ export class UsuarioContaService {
             }
 
             cliente.saldo += valor;
-            await this.repository.save(cliente);
+            await this.repo().save(cliente);
 
             LoggerService.info("Saldo atualizado", { 
                 id, 
@@ -144,7 +145,7 @@ export class UsuarioContaService {
 
     static async consultarSaldo(id: string) {
         try {
-            const cliente = await this.repository.findOne({
+            const cliente = await this.repo().findOne({
                 where: { id },
                 select: ["id", "saldo", "limiteCredito", "creditoUtilizado"]
             });
@@ -175,7 +176,7 @@ export class UsuarioContaService {
             const bandeira = bandeiraSelecionada === 'V' ? BandeiraCartao.VISA : BandeiraCartao.MASTERCARD;
             
             // Criar cartão múltiplo (débito + crédito)
-            const cartaoMultiplo = this.cartaoRepository.create({
+            const cartaoMultiplo = this.cartaoRepo().create({
                 usuarioConta: usuario,
                 tipo: TipoCartao.MULTIPLO, // Cartão múltiplo (débito + crédito)
                 bandeira: bandeira,
@@ -188,11 +189,12 @@ export class UsuarioContaService {
                 ehSegundaVia: false // Cartão inicial não é segunda via
             });
 
-            await this.cartaoRepository.save(cartaoMultiplo);
+            await this.cartaoRepo().save(cartaoMultiplo);
 
+            const cartaoIdSafe = (cartaoMultiplo as any)?.id || undefined;
             LoggerService.info("Cartão múltiplo criado", { 
                 usuarioId: usuario.id,
-                cartaoId: cartaoMultiplo.id,
+                cartaoId: cartaoIdSafe,
                 bandeira: bandeira,
                 tipo: "MULTIPLO (Débito + Crédito)"
             });
@@ -230,10 +232,9 @@ export class UsuarioContaService {
         return `${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear().toString().slice(-2)}`;
     }
 
-    // Novos métodos para a refatoração
     static async atualizarSenha(id: string, novaSenha: string) {
         try {
-            const cliente = await this.repository.findOne({
+            const cliente = await this.repo().findOne({
                 where: { id }
             });
 
@@ -241,8 +242,8 @@ export class UsuarioContaService {
                 throw new Error("Cliente não encontrado");
             }
 
-            cliente.senha = novaSenha;
-            await this.repository.save(cliente);
+            (cliente as any).senha = novaSenha as any;
+            await this.repo().save(cliente);
 
             LoggerService.info("Senha atualizada", {
                 clienteId: id
@@ -264,7 +265,7 @@ export class UsuarioContaService {
         endereco?: string;
     }) {
         try {
-            const cliente = await this.repository.findOne({
+            const cliente = await this.repo().findOne({
                 where: { id }
             });
 
@@ -273,25 +274,25 @@ export class UsuarioContaService {
             }
 
             if (configuracoes.notificacoesPush !== undefined) {
-                cliente.notificacoesPush = configuracoes.notificacoesPush;
+                (cliente as any).notificacoesPush = configuracoes.notificacoesPush;
             }
             if (configuracoes.notificacoesEmail !== undefined) {
-                cliente.notificacoesEmail = configuracoes.notificacoesEmail;
+                (cliente as any).notificacoesEmail = configuracoes.notificacoesEmail;
             }
             if (configuracoes.notificacoesSms !== undefined) {
-                cliente.notificacoesSms = configuracoes.notificacoesSms;
+                (cliente as any).notificacoesSms = configuracoes.notificacoesSms;
             }
             if (configuracoes.telefone !== undefined) {
-                cliente.telefone = configuracoes.telefone;
+                (cliente as any).telefone = configuracoes.telefone;
             }
             if (configuracoes.email !== undefined) {
-                cliente.email = configuracoes.email as any;
+                (cliente as any).email = configuracoes.email as any;
             }
             if (configuracoes.endereco !== undefined) {
-                cliente.endereco = configuracoes.endereco;
+                (cliente as any).endereco = configuracoes.endereco;
             }
 
-            await this.repository.save(cliente);
+            await this.repo().save(cliente);
 
             LoggerService.info("Configurações atualizadas", {
                 clienteId: id,
@@ -305,16 +306,15 @@ export class UsuarioContaService {
         }
     }
 
-    // Novo método específico para atualizar o e-mail (usado nas chaves PIX)
     static async atualizarEmail(id: string, email: string | null) {
         try {
-            const cliente = await this.repository.findOne({ where: { id } });
+            const cliente = await this.repo().findOne({ where: { id } });
             if (!cliente) {
                 throw new Error("Cliente não encontrado");
             }
 
-            cliente.email = email as any; // aceita null
-            await this.repository.save(cliente);
+            (cliente as any).email = email as any; // aceita null
+            await this.repo().save(cliente);
 
             LoggerService.info("Email atualizado", {
                 clienteId: id,
@@ -328,10 +328,9 @@ export class UsuarioContaService {
         }
     }
 
-    // === Novos utilitários para chaves PIX (email) ===
     static async buscarPorEmail(email: string) {
         try {
-            const cliente = await this.repository.findOne({ where: { email } });
+            const cliente = await this.repo().findOne({ where: { email } as any });
             return cliente;
         } catch (error) {
             LoggerService.error("Erro ao buscar cliente por email", error);
@@ -339,7 +338,22 @@ export class UsuarioContaService {
         }
     }
 
-    // Método não estático para compatibilidade com as novas rotas
+    static async buscarPorAgenciaEConta(agencia: string, numeroConta: string) {
+        try {
+            const cliente = await this.repo().findOne({ 
+                where: { 
+                    agencia: agencia,
+                    numeroConta: numeroConta 
+                } 
+            });
+            return cliente;
+        } catch (error) {
+            LoggerService.error("Erro ao buscar cliente por agência e conta", error);
+            throw error;
+        }
+    }
+
+    // Métodos de instância delegando para estáticos (compat)
     async buscarPorId(id: string) {
         return UsuarioContaService.buscarPorId(id);
     }

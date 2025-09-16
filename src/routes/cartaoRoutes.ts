@@ -1,11 +1,12 @@
 import { Router, Request, Response } from "express";
 import { body } from "express-validator";
 import { CartaoService } from "../services/CartaoService";
-import { BandeiraCartao } from "../entities/Cartao";
+import { BandeiraCartao, Cartao } from "../entities/Cartao";
 import { validateRequest } from "../middleware/validateRequest";
 import { LoggerService } from "../services/LoggerService";
 import { idempotencyMiddleware, IdempotentRequest } from "../middleware/idempotencyMiddleware";
 import { authMiddleware, AuthRequest } from "../middleware/authMiddleware";
+import { AppDataSource } from "../database/data-source";
 
 const router = Router();
 
@@ -58,6 +59,36 @@ router.get("/cliente/:usuarioId", async (req: Request, res: Response) => {
         return res.json(cartoes);
     } catch (error) {
         LoggerService.error("Erro ao buscar cartões do usuário", error);
+        return res.status(400).json({ erro: (error as Error).message });
+    }
+});
+
+// GET /cartoes/debito/:id - Detalhes do cartão de débito (compatibilidade com testes)
+router.get("/debito/:id", authMiddleware, async (req: Request<{ id: string }>, res: Response) => {
+    try {
+        const repo = AppDataSource.getRepository(Cartao);
+        const cartao = await repo.findOne({ where: { id: req.params.id } as any });
+        if (!cartao) {
+            return res.status(404).json({ erro: "Cartão não encontrado" });
+        }
+        return res.json(cartao);
+    } catch (error) {
+        LoggerService.error("Erro ao obter cartão de débito", error);
+        return res.status(400).json({ erro: (error as Error).message });
+    }
+});
+
+// GET /cartoes/credito/:id - Detalhes do cartão de crédito (compatibilidade com testes)
+router.get("/credito/:id", authMiddleware, async (req: Request<{ id: string }>, res: Response) => {
+    try {
+        const repo = AppDataSource.getRepository(Cartao);
+        const cartao = await repo.findOne({ where: { id: req.params.id } as any });
+        if (!cartao) {
+            return res.status(404).json({ erro: "Cartão não encontrado" });
+        }
+        return res.json(cartao);
+    } catch (error) {
+        LoggerService.error("Erro ao obter cartão de crédito", error);
         return res.status(400).json({ erro: (error as Error).message });
     }
 });
